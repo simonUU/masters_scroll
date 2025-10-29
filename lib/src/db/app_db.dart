@@ -192,11 +192,65 @@ class AppDb extends _$AppDb {
     ));
   }
 
+  Future<Note?> getNoteById(int id) async {
+    return await (select(notes)..where((tbl) => tbl.id.equals(id))).getSingleOrNull();
+  }
+
   Future<void> updateNoteContent(int id, String? content, {String? title}) async {
     await (update(notes)..where((tbl) => tbl.id.equals(id))).write(NotesCompanion(content: Value(content), title: title != null ? Value(title) : Value.absent(), updatedAt: Value(DateTime.now())));
   }
 
   Future<void> deleteNote(int id) async {
+    // First, get the note that's being deleted to know its parentId and sortOrder
+    final noteToDelete = await (select(notes)..where((tbl) => tbl.id.equals(id))).getSingleOrNull();
+    if (noteToDelete == null) return; // Note doesn't exist
+    
+    // Find all child notes of the note being deleted
+    final childNotes = await (select(notes)..where((n) => n.parentId.equals(id))..orderBy([(n) => OrderingTerm(expression: n.sortOrder)])).get();
+    
+    // Move all child notes to the same level as the deleted note
+    // Position them after the deleted note's position
+    int nextSortOrder = noteToDelete.sortOrder + 1;
+    
+    for (final child in childNotes) {
+      await (update(notes)..where((n) => n.id.equals(child.id))).write(
+        NotesCompanion(
+          parentId: Value(noteToDelete.parentId), // Move to same level as deleted note
+          sortOrder: Value(nextSortOrder), // Position them sequentially after deleted note
+          updatedAt: Value(DateTime.now()),
+        ),
+      );
+      nextSortOrder++;
+    }
+    
+    // Update sort order for other sibling notes that come after the deleted note
+    // to make room for the moved child notes
+    if (childNotes.isNotEmpty) {
+      Expression<bool> siblingCondition;
+      if (noteToDelete.parentId != null) {
+        siblingCondition = notes.parentId.equals(noteToDelete.parentId!) & 
+                          notes.sortOrder.isBiggerThanValue(noteToDelete.sortOrder) & 
+                          notes.id.equals(id).not();
+      } else {
+        siblingCondition = notes.parentId.isNull() & 
+                          notes.sortOrder.isBiggerThanValue(noteToDelete.sortOrder) & 
+                          notes.id.equals(id).not();
+      }
+      
+      final siblingsToUpdate = await (select(notes)..where((n) => siblingCondition)).get();
+      
+      for (final sibling in siblingsToUpdate) {
+        await (update(notes)..where((n) => n.id.equals(sibling.id))).write(
+          NotesCompanion(
+            sortOrder: Value(sibling.sortOrder + childNotes.length), // Shift by number of moved children
+            updatedAt: Value(DateTime.now()),
+          ),
+        );
+      }
+    }
+    
+    // Now safely delete the note (child data like media items and steps 
+    // will be deleted automatically due to CASCADE constraints)
     await (delete(notes)..where((tbl) => tbl.id.equals(id))).go();
   }
 

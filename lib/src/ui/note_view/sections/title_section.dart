@@ -2,48 +2,22 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../note_view_state.dart';
-import '../widgets/section_card.dart';
+import '../widgets/simple_section.dart';
 
-class TitleSection extends StatefulWidget {
+class TitleSection extends StatelessWidget {
   const TitleSection({super.key});
-
-  @override
-  State<TitleSection> createState() => _TitleSectionState();
-}
-
-class _TitleSectionState extends State<TitleSection> {
-  late TextEditingController _titleController;
-
-  @override
-  void initState() {
-    super.initState();
-    _titleController = TextEditingController();
-  }
-
-  @override
-  void dispose() {
-    _titleController.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
     return Consumer<NoteViewState>(
       builder: (context, state, child) {
-        // Update controller text when note changes
-        if (_titleController.text != (state.currentNote?.title ?? '')) {
-          _titleController.text = state.currentNote?.title ?? '';
-        }
-
-        return SectionCard(
-          title: 'Title',
-          icon: Icons.title,
-          headerColor: Colors.blue[50],
+        return SimpleSection(
+          padding: const EdgeInsets.symmetric(vertical: 8),
           child: state.isEditing
               ? TextField(
-                  controller: _titleController,
+                  controller: state.titleController,
                   style: const TextStyle(
-                    fontSize: 24,
+                    fontSize: 28,
                     fontWeight: FontWeight.bold,
                   ),
                   decoration: const InputDecoration(
@@ -51,27 +25,14 @@ class _TitleSectionState extends State<TitleSection> {
                     border: InputBorder.none,
                     contentPadding: EdgeInsets.zero,
                   ),
-                  onChanged: (value) {
-                    state.titleController.text = value;
-                  },
                 )
-              : state.currentNote?.title.isNotEmpty == true
-                  ? Text(
-                      state.currentNote!.title,
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    )
-                  : const Text(
-                      'Untitled Note',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.grey,
-                        fontStyle: FontStyle.italic,
-                      ),
-                    ),
+              : Text(
+                  state.currentNote?.title ?? 'Untitled Note',
+                  style: const TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
         );
       },
     );

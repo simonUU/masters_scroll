@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:provider/provider.dart';
 import '../note_view_state.dart';
-import '../widgets/section_card.dart';
+import '../widgets/simple_section.dart';
 import '../widgets/empty_state_widget.dart';
 import '../widgets/quill_toolbar.dart';
 
@@ -14,10 +14,9 @@ class ContentSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<NoteViewState>(
       builder: (context, state, child) {
-        return SectionCard(
-          title: 'Content',
-          icon: Icons.edit_note,
-          headerColor: Colors.orange[50],
+        return SimpleSection(
+          showBorder: true,
+          backgroundColor: Colors.white,
           child: Column(
             children: [
               if (state.isEditing) ...[

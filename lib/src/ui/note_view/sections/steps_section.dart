@@ -3,7 +3,7 @@ import 'package:flutter/material.dart' hide Step;
 import 'package:provider/provider.dart';
 import '../../../db/app_db.dart';
 import '../note_view_state.dart';
-import '../widgets/section_card.dart';
+import '../widgets/simple_section.dart';
 import '../widgets/empty_state_widget.dart';
 import '../widgets/step_card.dart';
 
@@ -14,23 +14,39 @@ class StepsSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<NoteViewState>(
       builder: (context, state, child) {
-        return SectionCard(
-          title: 'Steps',
-          icon: Icons.list_alt,
-          headerColor: Colors.purple[50],
-          trailing: state.isEditing
-              ? IconButton(
-                  icon: const Icon(Icons.add),
-                  onPressed: () => _addNewStep(context, state),
-                )
-              : null,
-          child: state.steps.isEmpty
-              ? const EmptyStateWidget(
+        if (state.steps.isEmpty && !state.isEditing) {
+          return const SizedBox.shrink(); // Hide when empty and not editing
+        }
+        
+        return SimpleSection(
+          showBorder: true,
+          backgroundColor: Colors.white,
+          child: Column(
+            children: [
+              // Add step button when editing
+              if (state.isEditing)
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () => _addNewStep(context, state),
+                    icon: const Icon(Icons.add),
+                    label: const Text('Add Step'),
+                  ),
+                ),
+              
+              // Steps list or empty state
+              if (state.steps.isEmpty)
+                const EmptyStateWidget(
                   icon: Icons.list_alt,
                   message: 'No steps added yet',
                   subtitle: 'Break down your technique into steps',
                 )
-              : _buildStepsList(state),
+              else ...[
+                if (state.isEditing) const SizedBox(height: 16),
+                _buildStepsList(state),
+              ],
+            ],
+          ),
         );
       },
     );

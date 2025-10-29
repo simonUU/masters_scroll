@@ -42,13 +42,13 @@ class SectionCard extends StatelessWidget {
             ),
             child: Row(
               children: [
-                Icon(icon, size: 12, color: _getIconColor()),
+                Icon(icon, size: 14, color: _getIconColor()),
                 const SizedBox(width: 8),
                 Text(
                   title,
                   style: TextStyle(
                     fontWeight: FontWeight.w600,
-                    fontSize: 10,
+                    fontSize: 12,
                     color: _getTextColor(),
                   ),
                 ),

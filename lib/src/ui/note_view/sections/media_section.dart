@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../note_view_state.dart';
-import '../widgets/section_card.dart';
+import '../widgets/simple_section.dart';
 import '../widgets/empty_state_widget.dart';
 
 class MediaSection extends StatelessWidget {
@@ -13,39 +13,62 @@ class MediaSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<NoteViewState>(
       builder: (context, state, child) {
-        return SectionCard(
-          title: 'Media',
-          icon: Icons.photo,
-          headerColor: Colors.green[50],
-          trailing: state.isEditing
-              ? IconButton(
-                  icon: const Icon(Icons.add_a_photo),
-                  onPressed: () => state.addImage(context),
-                )
-              : null,
-          child: state.media.isEmpty
-              ? const EmptyStateWidget(
-                  icon: Icons.photo,
-                  message: 'No media added yet',
-                  subtitle: 'Tap the + icon to add photos',
-                )
-              : GridView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 3,
-                    crossAxisSpacing: 8,
-                    mainAxisSpacing: 8,
+        if (state.media.isEmpty && !state.isEditing) {
+          return const SizedBox.shrink(); // Hide when empty and not editing
+        }
+        
+        return SimpleSection(
+          padding: EdgeInsets.zero,
+          backgroundColor: state.media.isNotEmpty ? Colors.grey.shade50 : null,
+          child: Column(
+            children: [
+              // Add photo button when editing
+              if (state.isEditing)
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () => state.addImage(context),
+                      icon: const Icon(Icons.add_a_photo),
+                      label: const Text('Add Photo'),
+                    ),
                   ),
-                  itemCount: state.media.length,
-                  itemBuilder: (context, index) {
-                    final mediaItem = state.media[index];
-                    return _MediaThumbnail(
-                      mediaItem: mediaItem,
-                      onTap: () => _showMediaFullScreen(context, mediaItem),
-                    );
-                  },
                 ),
+              
+              // Media grid or empty state
+              if (state.media.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.all(16),
+                  child: EmptyStateWidget(
+                    icon: Icons.photo,
+                    message: 'No media added yet',
+                    subtitle: 'Tap "Add Photo" to get started',
+                  ),
+                )
+              else
+                Container(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                  child: GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 3,
+                      crossAxisSpacing: 8,
+                      mainAxisSpacing: 8,
+                    ),
+                    itemCount: state.media.length,
+                    itemBuilder: (context, index) {
+                      final mediaItem = state.media[index];
+                      return _MediaThumbnail(
+                        mediaItem: mediaItem,
+                        onTap: () => _showMediaFullScreen(context, mediaItem),
+                      );
+                    },
+                  ),
+                ),
+            ],
+          ),
         );
       },
     );

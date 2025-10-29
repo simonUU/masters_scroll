@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../note_view_state.dart';
-import '../widgets/section_card.dart';
+import '../widgets/simple_section.dart';
 
 class MetadataSection extends StatelessWidget {
   const MetadataSection({super.key});
@@ -11,10 +11,8 @@ class MetadataSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<NoteViewState>(
       builder: (context, state, child) {
-        return SectionCard(
-          title: 'Info',
-          icon: Icons.info_outline,
-          headerColor: Colors.grey[100],
+        return SimpleSection(
+          padding: const EdgeInsets.symmetric(vertical: 8),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
