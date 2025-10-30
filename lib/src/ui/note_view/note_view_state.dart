@@ -7,7 +7,7 @@ import 'package:provider/provider.dart';
 import '../../db/app_db.dart';
 
 class NoteViewState extends ChangeNotifier {
-  final int noteId;
+  final String noteId;
   final bool startInEditMode;
   
   // Controllers
@@ -21,6 +21,7 @@ class NoteViewState extends ChangeNotifier {
   List<MediaItem> _media = [];
   List<Step> _steps = [];
   Note? _currentNote;
+  String? _newlyAddedStepId;
   
   // Getters
   TextEditingController get titleController => _titleController;
@@ -31,6 +32,7 @@ class NoteViewState extends ChangeNotifier {
   List<MediaItem> get media => _media;
   List<Step> get steps => _steps;
   Note? get currentNote => _currentNote;
+  String? get newlyAddedStepId => _newlyAddedStepId;
   
   NoteViewState({required this.noteId, this.startInEditMode = false}) {
     _isEditing = startInEditMode;
@@ -212,7 +214,10 @@ class NoteViewState extends ChangeNotifier {
   Future<void> addStep(BuildContext context, String title, {String? description}) async {
     try {
       final db = Provider.of<AppDb>(context, listen: false);
-      await db.createStep(noteId, title, description: description);
+      final newStepId = await db.createStep(noteId, title, description: description);
+      
+      // Track the newly added step
+      _newlyAddedStepId = newStepId;
       
       // Reload steps
       final steps = await db.getStepsForNote(noteId);
@@ -233,7 +238,11 @@ class NoteViewState extends ChangeNotifier {
     }
   }
 
-  Future<void> updateStep(BuildContext context, int stepId, {String? title, String? description, String? imageUrl, String? duration, String? notes}) async {
+  void clearNewlyAddedStepId() {
+    _newlyAddedStepId = null;
+  }
+
+  Future<void> updateStep(BuildContext context, String stepId, {String? title, String? description, String? imageUrl, String? duration, String? notes}) async {
     try {
       final db = Provider.of<AppDb>(context, listen: false);
       await db.updateStep(stepId, title: title, description: description, imageUrl: imageUrl, duration: duration, notes: notes);
@@ -251,7 +260,7 @@ class NoteViewState extends ChangeNotifier {
     }
   }
 
-  Future<void> deleteStep(BuildContext context, int stepId) async {
+  Future<void> deleteStep(BuildContext context, String stepId) async {
     try {
       final db = Provider.of<AppDb>(context, listen: false);
       await db.deleteStep(stepId);
@@ -292,7 +301,7 @@ class NoteViewState extends ChangeNotifier {
     }
   }
 
-  Future<void> addStepImage(BuildContext context, int stepId) async {
+  Future<void> addStepImage(BuildContext context, String stepId) async {
     final picker = ImagePicker();
     final image = await picker.pickImage(source: ImageSource.gallery);
     

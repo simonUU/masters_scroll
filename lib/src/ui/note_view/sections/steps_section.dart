@@ -23,8 +23,19 @@ class StepsSection extends StatelessWidget {
           backgroundColor: Colors.white,
           child: Column(
             children: [
-              // Add step button when editing
-              if (state.isEditing)
+              // Steps list or empty state
+              if (state.steps.isEmpty)
+                const EmptyStateWidget(
+                  icon: Icons.list_alt,
+                  message: 'No steps added yet',
+                  subtitle: 'Break down your technique into steps',
+                )
+              else
+                _buildStepsList(state),
+              
+              // Add step button when editing - now positioned after the steps
+              if (state.isEditing) ...[
+                const SizedBox(height: 16),
                 SizedBox(
                   width: double.infinity,
                   child: OutlinedButton.icon(
@@ -33,17 +44,6 @@ class StepsSection extends StatelessWidget {
                     label: const Text('Add Step'),
                   ),
                 ),
-              
-              // Steps list or empty state
-              if (state.steps.isEmpty)
-                const EmptyStateWidget(
-                  icon: Icons.list_alt,
-                  message: 'No steps added yet',
-                  subtitle: 'Break down your technique into steps',
-                )
-              else ...[
-                if (state.isEditing) const SizedBox(height: 16),
-                _buildStepsList(state),
               ],
             ],
           ),
@@ -61,6 +61,7 @@ class StepsSection extends StatelessWidget {
             children: state.steps
                 .map((step) => StepCard(
                       step: step,
+                      startInEditMode: step.id == state.newlyAddedStepId,
                       onDelete: () => _deleteStep(context, state, step.id),
                     ))
                 .toList(),
@@ -81,6 +82,7 @@ class StepsSection extends StatelessWidget {
               key: ValueKey(step.id),
               child: StepCard(
                 step: step,
+                startInEditMode: step.id == state.newlyAddedStepId,
                 onDelete: () => _deleteStep(context, state, step.id),
               ),
             );
@@ -120,7 +122,7 @@ class StepsSection extends StatelessWidget {
     state.addStep(context, 'New Step');
   }
 
-  void _deleteStep(BuildContext context, NoteViewState state, int stepId) {
+  void _deleteStep(BuildContext context, NoteViewState state, String stepId) {
     state.deleteStep(context, stepId);
   }
 }

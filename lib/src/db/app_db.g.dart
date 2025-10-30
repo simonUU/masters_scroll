@@ -10,13 +10,9 @@ class $NotesTable extends Notes with TableInfo<$NotesTable, Note> {
   $NotesTable(this.attachedDatabase, [this._alias]);
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
-  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
       'id', aliasedName, false,
-      hasAutoIncrement: true,
-      type: DriftSqlType.int,
-      requiredDuringInsert: false,
-      defaultConstraints:
-          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+      type: DriftSqlType.string, requiredDuringInsert: true);
   static const VerificationMeta _titleMeta = const VerificationMeta('title');
   @override
   late final GeneratedColumn<String> title = GeneratedColumn<String>(
@@ -34,9 +30,9 @@ class $NotesTable extends Notes with TableInfo<$NotesTable, Note> {
   static const VerificationMeta _parentIdMeta =
       const VerificationMeta('parentId');
   @override
-  late final GeneratedColumn<int> parentId = GeneratedColumn<int>(
+  late final GeneratedColumn<String> parentId = GeneratedColumn<String>(
       'parent_id', aliasedName, true,
-      type: DriftSqlType.int,
+      type: DriftSqlType.string,
       requiredDuringInsert: false,
       defaultConstraints:
           GeneratedColumn.constraintIsAlways('REFERENCES notes (id)'));
@@ -95,6 +91,8 @@ class $NotesTable extends Notes with TableInfo<$NotesTable, Note> {
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
     }
     if (data.containsKey('title')) {
       context.handle(
@@ -138,13 +136,13 @@ class $NotesTable extends Notes with TableInfo<$NotesTable, Note> {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return Note(
       id: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
       title: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}title'])!,
       content: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}content']),
       parentId: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}parent_id']),
+          .read(DriftSqlType.string, data['${effectivePrefix}parent_id']),
       sortOrder: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}sort_order'])!,
       isExpanded: attachedDatabase.typeMapping
@@ -163,10 +161,10 @@ class $NotesTable extends Notes with TableInfo<$NotesTable, Note> {
 }
 
 class Note extends DataClass implements Insertable<Note> {
-  final int id;
+  final String id;
   final String title;
   final String? content;
-  final int? parentId;
+  final String? parentId;
   final int sortOrder;
   final bool isExpanded;
   final DateTime createdAt;
@@ -183,13 +181,13 @@ class Note extends DataClass implements Insertable<Note> {
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
-    map['id'] = Variable<int>(id);
+    map['id'] = Variable<String>(id);
     map['title'] = Variable<String>(title);
     if (!nullToAbsent || content != null) {
       map['content'] = Variable<String>(content);
     }
     if (!nullToAbsent || parentId != null) {
-      map['parent_id'] = Variable<int>(parentId);
+      map['parent_id'] = Variable<String>(parentId);
     }
     map['sort_order'] = Variable<int>(sortOrder);
     map['is_expanded'] = Variable<bool>(isExpanded);
@@ -223,10 +221,10 @@ class Note extends DataClass implements Insertable<Note> {
       {ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return Note(
-      id: serializer.fromJson<int>(json['id']),
+      id: serializer.fromJson<String>(json['id']),
       title: serializer.fromJson<String>(json['title']),
       content: serializer.fromJson<String?>(json['content']),
-      parentId: serializer.fromJson<int?>(json['parentId']),
+      parentId: serializer.fromJson<String?>(json['parentId']),
       sortOrder: serializer.fromJson<int>(json['sortOrder']),
       isExpanded: serializer.fromJson<bool>(json['isExpanded']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
@@ -237,10 +235,10 @@ class Note extends DataClass implements Insertable<Note> {
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
-      'id': serializer.toJson<int>(id),
+      'id': serializer.toJson<String>(id),
       'title': serializer.toJson<String>(title),
       'content': serializer.toJson<String?>(content),
-      'parentId': serializer.toJson<int?>(parentId),
+      'parentId': serializer.toJson<String?>(parentId),
       'sortOrder': serializer.toJson<int>(sortOrder),
       'isExpanded': serializer.toJson<bool>(isExpanded),
       'createdAt': serializer.toJson<DateTime>(createdAt),
@@ -249,10 +247,10 @@ class Note extends DataClass implements Insertable<Note> {
   }
 
   Note copyWith(
-          {int? id,
+          {String? id,
           String? title,
           Value<String?> content = const Value.absent(),
-          Value<int?> parentId = const Value.absent(),
+          Value<String?> parentId = const Value.absent(),
           int? sortOrder,
           bool? isExpanded,
           DateTime? createdAt,
@@ -314,14 +312,15 @@ class Note extends DataClass implements Insertable<Note> {
 }
 
 class NotesCompanion extends UpdateCompanion<Note> {
-  final Value<int> id;
+  final Value<String> id;
   final Value<String> title;
   final Value<String?> content;
-  final Value<int?> parentId;
+  final Value<String?> parentId;
   final Value<int> sortOrder;
   final Value<bool> isExpanded;
   final Value<DateTime> createdAt;
   final Value<DateTime?> updatedAt;
+  final Value<int> rowid;
   const NotesCompanion({
     this.id = const Value.absent(),
     this.title = const Value.absent(),
@@ -331,9 +330,10 @@ class NotesCompanion extends UpdateCompanion<Note> {
     this.isExpanded = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
   });
   NotesCompanion.insert({
-    this.id = const Value.absent(),
+    required String id,
     required String title,
     this.content = const Value.absent(),
     this.parentId = const Value.absent(),
@@ -341,16 +341,19 @@ class NotesCompanion extends UpdateCompanion<Note> {
     this.isExpanded = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
-  }) : title = Value(title);
+    this.rowid = const Value.absent(),
+  })  : id = Value(id),
+        title = Value(title);
   static Insertable<Note> custom({
-    Expression<int>? id,
+    Expression<String>? id,
     Expression<String>? title,
     Expression<String>? content,
-    Expression<int>? parentId,
+    Expression<String>? parentId,
     Expression<int>? sortOrder,
     Expression<bool>? isExpanded,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -361,18 +364,20 @@ class NotesCompanion extends UpdateCompanion<Note> {
       if (isExpanded != null) 'is_expanded': isExpanded,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
     });
   }
 
   NotesCompanion copyWith(
-      {Value<int>? id,
+      {Value<String>? id,
       Value<String>? title,
       Value<String?>? content,
-      Value<int?>? parentId,
+      Value<String?>? parentId,
       Value<int>? sortOrder,
       Value<bool>? isExpanded,
       Value<DateTime>? createdAt,
-      Value<DateTime?>? updatedAt}) {
+      Value<DateTime?>? updatedAt,
+      Value<int>? rowid}) {
     return NotesCompanion(
       id: id ?? this.id,
       title: title ?? this.title,
@@ -382,6 +387,7 @@ class NotesCompanion extends UpdateCompanion<Note> {
       isExpanded: isExpanded ?? this.isExpanded,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
     );
   }
 
@@ -389,7 +395,7 @@ class NotesCompanion extends UpdateCompanion<Note> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     if (id.present) {
-      map['id'] = Variable<int>(id.value);
+      map['id'] = Variable<String>(id.value);
     }
     if (title.present) {
       map['title'] = Variable<String>(title.value);
@@ -398,7 +404,7 @@ class NotesCompanion extends UpdateCompanion<Note> {
       map['content'] = Variable<String>(content.value);
     }
     if (parentId.present) {
-      map['parent_id'] = Variable<int>(parentId.value);
+      map['parent_id'] = Variable<String>(parentId.value);
     }
     if (sortOrder.present) {
       map['sort_order'] = Variable<int>(sortOrder.value);
@@ -411,6 +417,9 @@ class NotesCompanion extends UpdateCompanion<Note> {
     }
     if (updatedAt.present) {
       map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
     }
     return map;
   }
@@ -425,7 +434,8 @@ class NotesCompanion extends UpdateCompanion<Note> {
           ..write('sortOrder: $sortOrder, ')
           ..write('isExpanded: $isExpanded, ')
           ..write('createdAt: $createdAt, ')
-          ..write('updatedAt: $updatedAt')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
           ..write(')'))
         .toString();
   }
@@ -439,18 +449,14 @@ class $MediaItemsTable extends MediaItems
   $MediaItemsTable(this.attachedDatabase, [this._alias]);
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
-  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
       'id', aliasedName, false,
-      hasAutoIncrement: true,
-      type: DriftSqlType.int,
-      requiredDuringInsert: false,
-      defaultConstraints:
-          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+      type: DriftSqlType.string, requiredDuringInsert: true);
   static const VerificationMeta _noteIdMeta = const VerificationMeta('noteId');
   @override
-  late final GeneratedColumn<int> noteId = GeneratedColumn<int>(
+  late final GeneratedColumn<String> noteId = GeneratedColumn<String>(
       'note_id', aliasedName, false,
-      type: DriftSqlType.int,
+      type: DriftSqlType.string,
       requiredDuringInsert: true,
       $customConstraints: 'NOT NULL REFERENCES notes(id) ON DELETE CASCADE');
   static const VerificationMeta _typeMeta = const VerificationMeta('type');
@@ -488,6 +494,8 @@ class $MediaItemsTable extends MediaItems
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
     }
     if (data.containsKey('note_id')) {
       context.handle(_noteIdMeta,
@@ -521,9 +529,9 @@ class $MediaItemsTable extends MediaItems
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return MediaItem(
       id: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
       noteId: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}note_id'])!,
+          .read(DriftSqlType.string, data['${effectivePrefix}note_id'])!,
       type: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}type'])!,
       path: attachedDatabase.typeMapping
@@ -540,8 +548,8 @@ class $MediaItemsTable extends MediaItems
 }
 
 class MediaItem extends DataClass implements Insertable<MediaItem> {
-  final int id;
-  final int noteId;
+  final String id;
+  final String noteId;
   final String type;
   final String path;
   final int position;
@@ -554,8 +562,8 @@ class MediaItem extends DataClass implements Insertable<MediaItem> {
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
-    map['id'] = Variable<int>(id);
-    map['note_id'] = Variable<int>(noteId);
+    map['id'] = Variable<String>(id);
+    map['note_id'] = Variable<String>(noteId);
     map['type'] = Variable<String>(type);
     map['path'] = Variable<String>(path);
     map['position'] = Variable<int>(position);
@@ -576,8 +584,8 @@ class MediaItem extends DataClass implements Insertable<MediaItem> {
       {ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return MediaItem(
-      id: serializer.fromJson<int>(json['id']),
-      noteId: serializer.fromJson<int>(json['noteId']),
+      id: serializer.fromJson<String>(json['id']),
+      noteId: serializer.fromJson<String>(json['noteId']),
       type: serializer.fromJson<String>(json['type']),
       path: serializer.fromJson<String>(json['path']),
       position: serializer.fromJson<int>(json['position']),
@@ -587,8 +595,8 @@ class MediaItem extends DataClass implements Insertable<MediaItem> {
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
-      'id': serializer.toJson<int>(id),
-      'noteId': serializer.toJson<int>(noteId),
+      'id': serializer.toJson<String>(id),
+      'noteId': serializer.toJson<String>(noteId),
       'type': serializer.toJson<String>(type),
       'path': serializer.toJson<String>(path),
       'position': serializer.toJson<int>(position),
@@ -596,7 +604,11 @@ class MediaItem extends DataClass implements Insertable<MediaItem> {
   }
 
   MediaItem copyWith(
-          {int? id, int? noteId, String? type, String? path, int? position}) =>
+          {String? id,
+          String? noteId,
+          String? type,
+          String? path,
+          int? position}) =>
       MediaItem(
         id: id ?? this.id,
         noteId: noteId ?? this.noteId,
@@ -640,33 +652,38 @@ class MediaItem extends DataClass implements Insertable<MediaItem> {
 }
 
 class MediaItemsCompanion extends UpdateCompanion<MediaItem> {
-  final Value<int> id;
-  final Value<int> noteId;
+  final Value<String> id;
+  final Value<String> noteId;
   final Value<String> type;
   final Value<String> path;
   final Value<int> position;
+  final Value<int> rowid;
   const MediaItemsCompanion({
     this.id = const Value.absent(),
     this.noteId = const Value.absent(),
     this.type = const Value.absent(),
     this.path = const Value.absent(),
     this.position = const Value.absent(),
+    this.rowid = const Value.absent(),
   });
   MediaItemsCompanion.insert({
-    this.id = const Value.absent(),
-    required int noteId,
+    required String id,
+    required String noteId,
     required String type,
     required String path,
     this.position = const Value.absent(),
-  })  : noteId = Value(noteId),
+    this.rowid = const Value.absent(),
+  })  : id = Value(id),
+        noteId = Value(noteId),
         type = Value(type),
         path = Value(path);
   static Insertable<MediaItem> custom({
-    Expression<int>? id,
-    Expression<int>? noteId,
+    Expression<String>? id,
+    Expression<String>? noteId,
     Expression<String>? type,
     Expression<String>? path,
     Expression<int>? position,
+    Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -674,21 +691,24 @@ class MediaItemsCompanion extends UpdateCompanion<MediaItem> {
       if (type != null) 'type': type,
       if (path != null) 'path': path,
       if (position != null) 'position': position,
+      if (rowid != null) 'rowid': rowid,
     });
   }
 
   MediaItemsCompanion copyWith(
-      {Value<int>? id,
-      Value<int>? noteId,
+      {Value<String>? id,
+      Value<String>? noteId,
       Value<String>? type,
       Value<String>? path,
-      Value<int>? position}) {
+      Value<int>? position,
+      Value<int>? rowid}) {
     return MediaItemsCompanion(
       id: id ?? this.id,
       noteId: noteId ?? this.noteId,
       type: type ?? this.type,
       path: path ?? this.path,
       position: position ?? this.position,
+      rowid: rowid ?? this.rowid,
     );
   }
 
@@ -696,10 +716,10 @@ class MediaItemsCompanion extends UpdateCompanion<MediaItem> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     if (id.present) {
-      map['id'] = Variable<int>(id.value);
+      map['id'] = Variable<String>(id.value);
     }
     if (noteId.present) {
-      map['note_id'] = Variable<int>(noteId.value);
+      map['note_id'] = Variable<String>(noteId.value);
     }
     if (type.present) {
       map['type'] = Variable<String>(type.value);
@@ -709,6 +729,9 @@ class MediaItemsCompanion extends UpdateCompanion<MediaItem> {
     }
     if (position.present) {
       map['position'] = Variable<int>(position.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
     }
     return map;
   }
@@ -720,7 +743,8 @@ class MediaItemsCompanion extends UpdateCompanion<MediaItem> {
           ..write('noteId: $noteId, ')
           ..write('type: $type, ')
           ..write('path: $path, ')
-          ..write('position: $position')
+          ..write('position: $position, ')
+          ..write('rowid: $rowid')
           ..write(')'))
         .toString();
   }
@@ -733,13 +757,9 @@ class $TopicsTable extends Topics with TableInfo<$TopicsTable, Topic> {
   $TopicsTable(this.attachedDatabase, [this._alias]);
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
-  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
       'id', aliasedName, false,
-      hasAutoIncrement: true,
-      type: DriftSqlType.int,
-      requiredDuringInsert: false,
-      defaultConstraints:
-          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+      type: DriftSqlType.string, requiredDuringInsert: true);
   static const VerificationMeta _nameMeta = const VerificationMeta('name');
   @override
   late final GeneratedColumn<String> name = GeneratedColumn<String>(
@@ -751,9 +771,9 @@ class $TopicsTable extends Topics with TableInfo<$TopicsTable, Topic> {
   static const VerificationMeta _parentIdMeta =
       const VerificationMeta('parentId');
   @override
-  late final GeneratedColumn<int> parentId = GeneratedColumn<int>(
+  late final GeneratedColumn<String> parentId = GeneratedColumn<String>(
       'parent_id', aliasedName, true,
-      type: DriftSqlType.int,
+      type: DriftSqlType.string,
       requiredDuringInsert: false,
       defaultConstraints:
           GeneratedColumn.constraintIsAlways('REFERENCES topics (id)'));
@@ -778,6 +798,8 @@ class $TopicsTable extends Topics with TableInfo<$TopicsTable, Topic> {
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
     }
     if (data.containsKey('name')) {
       context.handle(
@@ -803,11 +825,11 @@ class $TopicsTable extends Topics with TableInfo<$TopicsTable, Topic> {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return Topic(
       id: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
       name: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}name'])!,
       parentId: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}parent_id']),
+          .read(DriftSqlType.string, data['${effectivePrefix}parent_id']),
       order: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}order'])!,
     );
@@ -820,9 +842,9 @@ class $TopicsTable extends Topics with TableInfo<$TopicsTable, Topic> {
 }
 
 class Topic extends DataClass implements Insertable<Topic> {
-  final int id;
+  final String id;
   final String name;
-  final int? parentId;
+  final String? parentId;
   final int order;
   const Topic(
       {required this.id,
@@ -832,10 +854,10 @@ class Topic extends DataClass implements Insertable<Topic> {
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
-    map['id'] = Variable<int>(id);
+    map['id'] = Variable<String>(id);
     map['name'] = Variable<String>(name);
     if (!nullToAbsent || parentId != null) {
-      map['parent_id'] = Variable<int>(parentId);
+      map['parent_id'] = Variable<String>(parentId);
     }
     map['order'] = Variable<int>(order);
     return map;
@@ -856,9 +878,9 @@ class Topic extends DataClass implements Insertable<Topic> {
       {ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return Topic(
-      id: serializer.fromJson<int>(json['id']),
+      id: serializer.fromJson<String>(json['id']),
       name: serializer.fromJson<String>(json['name']),
-      parentId: serializer.fromJson<int?>(json['parentId']),
+      parentId: serializer.fromJson<String?>(json['parentId']),
       order: serializer.fromJson<int>(json['order']),
     );
   }
@@ -866,17 +888,17 @@ class Topic extends DataClass implements Insertable<Topic> {
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
-      'id': serializer.toJson<int>(id),
+      'id': serializer.toJson<String>(id),
       'name': serializer.toJson<String>(name),
-      'parentId': serializer.toJson<int?>(parentId),
+      'parentId': serializer.toJson<String?>(parentId),
       'order': serializer.toJson<int>(order),
     };
   }
 
   Topic copyWith(
-          {int? id,
+          {String? id,
           String? name,
-          Value<int?> parentId = const Value.absent(),
+          Value<String?> parentId = const Value.absent(),
           int? order}) =>
       Topic(
         id: id ?? this.id,
@@ -917,46 +939,54 @@ class Topic extends DataClass implements Insertable<Topic> {
 }
 
 class TopicsCompanion extends UpdateCompanion<Topic> {
-  final Value<int> id;
+  final Value<String> id;
   final Value<String> name;
-  final Value<int?> parentId;
+  final Value<String?> parentId;
   final Value<int> order;
+  final Value<int> rowid;
   const TopicsCompanion({
     this.id = const Value.absent(),
     this.name = const Value.absent(),
     this.parentId = const Value.absent(),
     this.order = const Value.absent(),
+    this.rowid = const Value.absent(),
   });
   TopicsCompanion.insert({
-    this.id = const Value.absent(),
+    required String id,
     required String name,
     this.parentId = const Value.absent(),
     this.order = const Value.absent(),
-  }) : name = Value(name);
+    this.rowid = const Value.absent(),
+  })  : id = Value(id),
+        name = Value(name);
   static Insertable<Topic> custom({
-    Expression<int>? id,
+    Expression<String>? id,
     Expression<String>? name,
-    Expression<int>? parentId,
+    Expression<String>? parentId,
     Expression<int>? order,
+    Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (name != null) 'name': name,
       if (parentId != null) 'parent_id': parentId,
       if (order != null) 'order': order,
+      if (rowid != null) 'rowid': rowid,
     });
   }
 
   TopicsCompanion copyWith(
-      {Value<int>? id,
+      {Value<String>? id,
       Value<String>? name,
-      Value<int?>? parentId,
-      Value<int>? order}) {
+      Value<String?>? parentId,
+      Value<int>? order,
+      Value<int>? rowid}) {
     return TopicsCompanion(
       id: id ?? this.id,
       name: name ?? this.name,
       parentId: parentId ?? this.parentId,
       order: order ?? this.order,
+      rowid: rowid ?? this.rowid,
     );
   }
 
@@ -964,16 +994,19 @@ class TopicsCompanion extends UpdateCompanion<Topic> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     if (id.present) {
-      map['id'] = Variable<int>(id.value);
+      map['id'] = Variable<String>(id.value);
     }
     if (name.present) {
       map['name'] = Variable<String>(name.value);
     }
     if (parentId.present) {
-      map['parent_id'] = Variable<int>(parentId.value);
+      map['parent_id'] = Variable<String>(parentId.value);
     }
     if (order.present) {
       map['order'] = Variable<int>(order.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
     }
     return map;
   }
@@ -984,7 +1017,8 @@ class TopicsCompanion extends UpdateCompanion<Topic> {
           ..write('id: $id, ')
           ..write('name: $name, ')
           ..write('parentId: $parentId, ')
-          ..write('order: $order')
+          ..write('order: $order, ')
+          ..write('rowid: $rowid')
           ..write(')'))
         .toString();
   }
@@ -998,26 +1032,22 @@ class $NoteTopicsTable extends NoteTopics
   $NoteTopicsTable(this.attachedDatabase, [this._alias]);
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
-  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
       'id', aliasedName, false,
-      hasAutoIncrement: true,
-      type: DriftSqlType.int,
-      requiredDuringInsert: false,
-      defaultConstraints:
-          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+      type: DriftSqlType.string, requiredDuringInsert: true);
   static const VerificationMeta _noteIdMeta = const VerificationMeta('noteId');
   @override
-  late final GeneratedColumn<int> noteId = GeneratedColumn<int>(
+  late final GeneratedColumn<String> noteId = GeneratedColumn<String>(
       'note_id', aliasedName, false,
-      type: DriftSqlType.int,
+      type: DriftSqlType.string,
       requiredDuringInsert: true,
       $customConstraints: 'NOT NULL REFERENCES notes(id) ON DELETE CASCADE');
   static const VerificationMeta _topicIdMeta =
       const VerificationMeta('topicId');
   @override
-  late final GeneratedColumn<int> topicId = GeneratedColumn<int>(
+  late final GeneratedColumn<String> topicId = GeneratedColumn<String>(
       'topic_id', aliasedName, false,
-      type: DriftSqlType.int,
+      type: DriftSqlType.string,
       requiredDuringInsert: true,
       $customConstraints: 'NOT NULL REFERENCES topics(id) ON DELETE CASCADE');
   @override
@@ -1034,6 +1064,8 @@ class $NoteTopicsTable extends NoteTopics
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
     }
     if (data.containsKey('note_id')) {
       context.handle(_noteIdMeta,
@@ -1057,11 +1089,11 @@ class $NoteTopicsTable extends NoteTopics
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return NoteTopic(
       id: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
       noteId: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}note_id'])!,
+          .read(DriftSqlType.string, data['${effectivePrefix}note_id'])!,
       topicId: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}topic_id'])!,
+          .read(DriftSqlType.string, data['${effectivePrefix}topic_id'])!,
     );
   }
 
@@ -1072,17 +1104,17 @@ class $NoteTopicsTable extends NoteTopics
 }
 
 class NoteTopic extends DataClass implements Insertable<NoteTopic> {
-  final int id;
-  final int noteId;
-  final int topicId;
+  final String id;
+  final String noteId;
+  final String topicId;
   const NoteTopic(
       {required this.id, required this.noteId, required this.topicId});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
-    map['id'] = Variable<int>(id);
-    map['note_id'] = Variable<int>(noteId);
-    map['topic_id'] = Variable<int>(topicId);
+    map['id'] = Variable<String>(id);
+    map['note_id'] = Variable<String>(noteId);
+    map['topic_id'] = Variable<String>(topicId);
     return map;
   }
 
@@ -1098,22 +1130,23 @@ class NoteTopic extends DataClass implements Insertable<NoteTopic> {
       {ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return NoteTopic(
-      id: serializer.fromJson<int>(json['id']),
-      noteId: serializer.fromJson<int>(json['noteId']),
-      topicId: serializer.fromJson<int>(json['topicId']),
+      id: serializer.fromJson<String>(json['id']),
+      noteId: serializer.fromJson<String>(json['noteId']),
+      topicId: serializer.fromJson<String>(json['topicId']),
     );
   }
   @override
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
-      'id': serializer.toJson<int>(id),
-      'noteId': serializer.toJson<int>(noteId),
-      'topicId': serializer.toJson<int>(topicId),
+      'id': serializer.toJson<String>(id),
+      'noteId': serializer.toJson<String>(noteId),
+      'topicId': serializer.toJson<String>(topicId),
     };
   }
 
-  NoteTopic copyWith({int? id, int? noteId, int? topicId}) => NoteTopic(
+  NoteTopic copyWith({String? id, String? noteId, String? topicId}) =>
+      NoteTopic(
         id: id ?? this.id,
         noteId: noteId ?? this.noteId,
         topicId: topicId ?? this.topicId,
@@ -1148,38 +1181,48 @@ class NoteTopic extends DataClass implements Insertable<NoteTopic> {
 }
 
 class NoteTopicsCompanion extends UpdateCompanion<NoteTopic> {
-  final Value<int> id;
-  final Value<int> noteId;
-  final Value<int> topicId;
+  final Value<String> id;
+  final Value<String> noteId;
+  final Value<String> topicId;
+  final Value<int> rowid;
   const NoteTopicsCompanion({
     this.id = const Value.absent(),
     this.noteId = const Value.absent(),
     this.topicId = const Value.absent(),
+    this.rowid = const Value.absent(),
   });
   NoteTopicsCompanion.insert({
-    this.id = const Value.absent(),
-    required int noteId,
-    required int topicId,
-  })  : noteId = Value(noteId),
+    required String id,
+    required String noteId,
+    required String topicId,
+    this.rowid = const Value.absent(),
+  })  : id = Value(id),
+        noteId = Value(noteId),
         topicId = Value(topicId);
   static Insertable<NoteTopic> custom({
-    Expression<int>? id,
-    Expression<int>? noteId,
-    Expression<int>? topicId,
+    Expression<String>? id,
+    Expression<String>? noteId,
+    Expression<String>? topicId,
+    Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (noteId != null) 'note_id': noteId,
       if (topicId != null) 'topic_id': topicId,
+      if (rowid != null) 'rowid': rowid,
     });
   }
 
   NoteTopicsCompanion copyWith(
-      {Value<int>? id, Value<int>? noteId, Value<int>? topicId}) {
+      {Value<String>? id,
+      Value<String>? noteId,
+      Value<String>? topicId,
+      Value<int>? rowid}) {
     return NoteTopicsCompanion(
       id: id ?? this.id,
       noteId: noteId ?? this.noteId,
       topicId: topicId ?? this.topicId,
+      rowid: rowid ?? this.rowid,
     );
   }
 
@@ -1187,13 +1230,16 @@ class NoteTopicsCompanion extends UpdateCompanion<NoteTopic> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     if (id.present) {
-      map['id'] = Variable<int>(id.value);
+      map['id'] = Variable<String>(id.value);
     }
     if (noteId.present) {
-      map['note_id'] = Variable<int>(noteId.value);
+      map['note_id'] = Variable<String>(noteId.value);
     }
     if (topicId.present) {
-      map['topic_id'] = Variable<int>(topicId.value);
+      map['topic_id'] = Variable<String>(topicId.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
     }
     return map;
   }
@@ -1203,7 +1249,8 @@ class NoteTopicsCompanion extends UpdateCompanion<NoteTopic> {
     return (StringBuffer('NoteTopicsCompanion(')
           ..write('id: $id, ')
           ..write('noteId: $noteId, ')
-          ..write('topicId: $topicId')
+          ..write('topicId: $topicId, ')
+          ..write('rowid: $rowid')
           ..write(')'))
         .toString();
   }
@@ -1216,18 +1263,14 @@ class $StepsTable extends Steps with TableInfo<$StepsTable, Step> {
   $StepsTable(this.attachedDatabase, [this._alias]);
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
-  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
       'id', aliasedName, false,
-      hasAutoIncrement: true,
-      type: DriftSqlType.int,
-      requiredDuringInsert: false,
-      defaultConstraints:
-          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+      type: DriftSqlType.string, requiredDuringInsert: true);
   static const VerificationMeta _noteIdMeta = const VerificationMeta('noteId');
   @override
-  late final GeneratedColumn<int> noteId = GeneratedColumn<int>(
+  late final GeneratedColumn<String> noteId = GeneratedColumn<String>(
       'note_id', aliasedName, false,
-      type: DriftSqlType.int,
+      type: DriftSqlType.string,
       requiredDuringInsert: true,
       $customConstraints: 'NOT NULL REFERENCES notes(id) ON DELETE CASCADE');
   static const VerificationMeta _stepOrderMeta =
@@ -1235,15 +1278,13 @@ class $StepsTable extends Steps with TableInfo<$StepsTable, Step> {
   @override
   late final GeneratedColumn<int> stepOrder = GeneratedColumn<int>(
       'step_order', aliasedName, false,
-      type: DriftSqlType.int,
-      requiredDuringInsert: false,
-      defaultValue: const Constant(0));
+      type: DriftSqlType.int, requiredDuringInsert: true);
   static const VerificationMeta _titleMeta = const VerificationMeta('title');
   @override
   late final GeneratedColumn<String> title = GeneratedColumn<String>(
       'title', aliasedName, false,
       additionalChecks:
-          GeneratedColumn.checkTextLength(minTextLength: 0, maxTextLength: 200),
+          GeneratedColumn.checkTextLength(minTextLength: 1, maxTextLength: 250),
       type: DriftSqlType.string,
       requiredDuringInsert: true);
   static const VerificationMeta _descriptionMeta =
@@ -1301,6 +1342,8 @@ class $StepsTable extends Steps with TableInfo<$StepsTable, Step> {
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
     }
     if (data.containsKey('note_id')) {
       context.handle(_noteIdMeta,
@@ -1311,6 +1354,8 @@ class $StepsTable extends Steps with TableInfo<$StepsTable, Step> {
     if (data.containsKey('step_order')) {
       context.handle(_stepOrderMeta,
           stepOrder.isAcceptableOrUnknown(data['step_order']!, _stepOrderMeta));
+    } else if (isInserting) {
+      context.missing(_stepOrderMeta);
     }
     if (data.containsKey('title')) {
       context.handle(
@@ -1350,9 +1395,9 @@ class $StepsTable extends Steps with TableInfo<$StepsTable, Step> {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return Step(
       id: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
       noteId: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}note_id'])!,
+          .read(DriftSqlType.string, data['${effectivePrefix}note_id'])!,
       stepOrder: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}step_order'])!,
       title: attachedDatabase.typeMapping
@@ -1377,8 +1422,8 @@ class $StepsTable extends Steps with TableInfo<$StepsTable, Step> {
 }
 
 class Step extends DataClass implements Insertable<Step> {
-  final int id;
-  final int noteId;
+  final String id;
+  final String noteId;
   final int stepOrder;
   final String title;
   final String? description;
@@ -1399,8 +1444,8 @@ class Step extends DataClass implements Insertable<Step> {
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
-    map['id'] = Variable<int>(id);
-    map['note_id'] = Variable<int>(noteId);
+    map['id'] = Variable<String>(id);
+    map['note_id'] = Variable<String>(noteId);
     map['step_order'] = Variable<int>(stepOrder);
     map['title'] = Variable<String>(title);
     if (!nullToAbsent || description != null) {
@@ -1444,8 +1489,8 @@ class Step extends DataClass implements Insertable<Step> {
       {ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return Step(
-      id: serializer.fromJson<int>(json['id']),
-      noteId: serializer.fromJson<int>(json['noteId']),
+      id: serializer.fromJson<String>(json['id']),
+      noteId: serializer.fromJson<String>(json['noteId']),
       stepOrder: serializer.fromJson<int>(json['stepOrder']),
       title: serializer.fromJson<String>(json['title']),
       description: serializer.fromJson<String?>(json['description']),
@@ -1459,8 +1504,8 @@ class Step extends DataClass implements Insertable<Step> {
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
-      'id': serializer.toJson<int>(id),
-      'noteId': serializer.toJson<int>(noteId),
+      'id': serializer.toJson<String>(id),
+      'noteId': serializer.toJson<String>(noteId),
       'stepOrder': serializer.toJson<int>(stepOrder),
       'title': serializer.toJson<String>(title),
       'description': serializer.toJson<String?>(description),
@@ -1472,8 +1517,8 @@ class Step extends DataClass implements Insertable<Step> {
   }
 
   Step copyWith(
-          {int? id,
-          int? noteId,
+          {String? id,
+          String? noteId,
           int? stepOrder,
           String? title,
           Value<String?> description = const Value.absent(),
@@ -1542,8 +1587,8 @@ class Step extends DataClass implements Insertable<Step> {
 }
 
 class StepsCompanion extends UpdateCompanion<Step> {
-  final Value<int> id;
-  final Value<int> noteId;
+  final Value<String> id;
+  final Value<String> noteId;
   final Value<int> stepOrder;
   final Value<String> title;
   final Value<String?> description;
@@ -1551,6 +1596,7 @@ class StepsCompanion extends UpdateCompanion<Step> {
   final Value<String?> duration;
   final Value<String?> notes;
   final Value<DateTime> createdAt;
+  final Value<int> rowid;
   const StepsCompanion({
     this.id = const Value.absent(),
     this.noteId = const Value.absent(),
@@ -1561,22 +1607,26 @@ class StepsCompanion extends UpdateCompanion<Step> {
     this.duration = const Value.absent(),
     this.notes = const Value.absent(),
     this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
   });
   StepsCompanion.insert({
-    this.id = const Value.absent(),
-    required int noteId,
-    this.stepOrder = const Value.absent(),
+    required String id,
+    required String noteId,
+    required int stepOrder,
     required String title,
     this.description = const Value.absent(),
     this.imageUrl = const Value.absent(),
     this.duration = const Value.absent(),
     this.notes = const Value.absent(),
     this.createdAt = const Value.absent(),
-  })  : noteId = Value(noteId),
+    this.rowid = const Value.absent(),
+  })  : id = Value(id),
+        noteId = Value(noteId),
+        stepOrder = Value(stepOrder),
         title = Value(title);
   static Insertable<Step> custom({
-    Expression<int>? id,
-    Expression<int>? noteId,
+    Expression<String>? id,
+    Expression<String>? noteId,
     Expression<int>? stepOrder,
     Expression<String>? title,
     Expression<String>? description,
@@ -1584,6 +1634,7 @@ class StepsCompanion extends UpdateCompanion<Step> {
     Expression<String>? duration,
     Expression<String>? notes,
     Expression<DateTime>? createdAt,
+    Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -1595,19 +1646,21 @@ class StepsCompanion extends UpdateCompanion<Step> {
       if (duration != null) 'duration': duration,
       if (notes != null) 'notes': notes,
       if (createdAt != null) 'created_at': createdAt,
+      if (rowid != null) 'rowid': rowid,
     });
   }
 
   StepsCompanion copyWith(
-      {Value<int>? id,
-      Value<int>? noteId,
+      {Value<String>? id,
+      Value<String>? noteId,
       Value<int>? stepOrder,
       Value<String>? title,
       Value<String?>? description,
       Value<String?>? imageUrl,
       Value<String?>? duration,
       Value<String?>? notes,
-      Value<DateTime>? createdAt}) {
+      Value<DateTime>? createdAt,
+      Value<int>? rowid}) {
     return StepsCompanion(
       id: id ?? this.id,
       noteId: noteId ?? this.noteId,
@@ -1618,6 +1671,7 @@ class StepsCompanion extends UpdateCompanion<Step> {
       duration: duration ?? this.duration,
       notes: notes ?? this.notes,
       createdAt: createdAt ?? this.createdAt,
+      rowid: rowid ?? this.rowid,
     );
   }
 
@@ -1625,10 +1679,10 @@ class StepsCompanion extends UpdateCompanion<Step> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     if (id.present) {
-      map['id'] = Variable<int>(id.value);
+      map['id'] = Variable<String>(id.value);
     }
     if (noteId.present) {
-      map['note_id'] = Variable<int>(noteId.value);
+      map['note_id'] = Variable<String>(noteId.value);
     }
     if (stepOrder.present) {
       map['step_order'] = Variable<int>(stepOrder.value);
@@ -1651,6 +1705,9 @@ class StepsCompanion extends UpdateCompanion<Step> {
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
     return map;
   }
 
@@ -1665,7 +1722,8 @@ class StepsCompanion extends UpdateCompanion<Step> {
           ..write('imageUrl: $imageUrl, ')
           ..write('duration: $duration, ')
           ..write('notes: $notes, ')
-          ..write('createdAt: $createdAt')
+          ..write('createdAt: $createdAt, ')
+          ..write('rowid: $rowid')
           ..write(')'))
         .toString();
   }
@@ -1721,24 +1779,26 @@ abstract class _$AppDb extends GeneratedDatabase {
 }
 
 typedef $$NotesTableCreateCompanionBuilder = NotesCompanion Function({
-  Value<int> id,
+  required String id,
   required String title,
   Value<String?> content,
-  Value<int?> parentId,
+  Value<String?> parentId,
   Value<int> sortOrder,
   Value<bool> isExpanded,
   Value<DateTime> createdAt,
   Value<DateTime?> updatedAt,
+  Value<int> rowid,
 });
 typedef $$NotesTableUpdateCompanionBuilder = NotesCompanion Function({
-  Value<int> id,
+  Value<String> id,
   Value<String> title,
   Value<String?> content,
-  Value<int?> parentId,
+  Value<String?> parentId,
   Value<int> sortOrder,
   Value<bool> isExpanded,
   Value<DateTime> createdAt,
   Value<DateTime?> updatedAt,
+  Value<int> rowid,
 });
 
 final class $$NotesTableReferences
@@ -1749,7 +1809,7 @@ final class $$NotesTableReferences
       .createAlias($_aliasNameGenerator(db.notes.parentId, db.notes.id));
 
   $$NotesTableProcessedTableManager? get parentId {
-    final $_column = $_itemColumn<int>('parent_id');
+    final $_column = $_itemColumn<String>('parent_id');
     if ($_column == null) return null;
     final manager = $$NotesTableTableManager($_db, $_db.notes)
         .filter((f) => f.id.sqlEquals($_column));
@@ -1766,7 +1826,7 @@ final class $$NotesTableReferences
 
   $$MediaItemsTableProcessedTableManager get mediaItemsRefs {
     final manager = $$MediaItemsTableTableManager($_db, $_db.mediaItems)
-        .filter((f) => f.noteId.id.sqlEquals($_itemColumn<int>('id')!));
+        .filter((f) => f.noteId.id.sqlEquals($_itemColumn<String>('id')!));
 
     final cache = $_typedResult.readTableOrNull(_mediaItemsRefsTable($_db));
     return ProcessedTableManager(
@@ -1780,7 +1840,7 @@ final class $$NotesTableReferences
 
   $$NoteTopicsTableProcessedTableManager get noteTopicsRefs {
     final manager = $$NoteTopicsTableTableManager($_db, $_db.noteTopics)
-        .filter((f) => f.noteId.id.sqlEquals($_itemColumn<int>('id')!));
+        .filter((f) => f.noteId.id.sqlEquals($_itemColumn<String>('id')!));
 
     final cache = $_typedResult.readTableOrNull(_noteTopicsRefsTable($_db));
     return ProcessedTableManager(
@@ -1794,7 +1854,7 @@ final class $$NotesTableReferences
 
   $$StepsTableProcessedTableManager get stepsRefs {
     final manager = $$StepsTableTableManager($_db, $_db.steps)
-        .filter((f) => f.noteId.id.sqlEquals($_itemColumn<int>('id')!));
+        .filter((f) => f.noteId.id.sqlEquals($_itemColumn<String>('id')!));
 
     final cache = $_typedResult.readTableOrNull(_stepsRefsTable($_db));
     return ProcessedTableManager(
@@ -1810,7 +1870,7 @@ class $$NotesTableFilterComposer extends Composer<_$AppDb, $NotesTable> {
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnFilters<int> get id => $composableBuilder(
+  ColumnFilters<String> get id => $composableBuilder(
       column: $table.id, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<String> get title => $composableBuilder(
@@ -1923,7 +1983,7 @@ class $$NotesTableOrderingComposer extends Composer<_$AppDb, $NotesTable> {
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnOrderings<int> get id => $composableBuilder(
+  ColumnOrderings<String> get id => $composableBuilder(
       column: $table.id, builder: (column) => ColumnOrderings(column));
 
   ColumnOrderings<String> get title => $composableBuilder(
@@ -1973,7 +2033,7 @@ class $$NotesTableAnnotationComposer extends Composer<_$AppDb, $NotesTable> {
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  GeneratedColumn<int> get id =>
+  GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
   GeneratedColumn<String> get title =>
@@ -2105,14 +2165,15 @@ class $$NotesTableTableManager extends RootTableManager<
           createComputedFieldComposer: () =>
               $$NotesTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback: ({
-            Value<int> id = const Value.absent(),
+            Value<String> id = const Value.absent(),
             Value<String> title = const Value.absent(),
             Value<String?> content = const Value.absent(),
-            Value<int?> parentId = const Value.absent(),
+            Value<String?> parentId = const Value.absent(),
             Value<int> sortOrder = const Value.absent(),
             Value<bool> isExpanded = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
             Value<DateTime?> updatedAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
           }) =>
               NotesCompanion(
             id: id,
@@ -2123,16 +2184,18 @@ class $$NotesTableTableManager extends RootTableManager<
             isExpanded: isExpanded,
             createdAt: createdAt,
             updatedAt: updatedAt,
+            rowid: rowid,
           ),
           createCompanionCallback: ({
-            Value<int> id = const Value.absent(),
+            required String id,
             required String title,
             Value<String?> content = const Value.absent(),
-            Value<int?> parentId = const Value.absent(),
+            Value<String?> parentId = const Value.absent(),
             Value<int> sortOrder = const Value.absent(),
             Value<bool> isExpanded = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
             Value<DateTime?> updatedAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
           }) =>
               NotesCompanion.insert(
             id: id,
@@ -2143,6 +2206,7 @@ class $$NotesTableTableManager extends RootTableManager<
             isExpanded: isExpanded,
             createdAt: createdAt,
             updatedAt: updatedAt,
+            rowid: rowid,
           ),
           withReferenceMapper: (p0) => p0
               .map((e) =>
@@ -2246,18 +2310,20 @@ typedef $$NotesTableProcessedTableManager = ProcessedTableManager<
         bool noteTopicsRefs,
         bool stepsRefs})>;
 typedef $$MediaItemsTableCreateCompanionBuilder = MediaItemsCompanion Function({
-  Value<int> id,
-  required int noteId,
+  required String id,
+  required String noteId,
   required String type,
   required String path,
   Value<int> position,
+  Value<int> rowid,
 });
 typedef $$MediaItemsTableUpdateCompanionBuilder = MediaItemsCompanion Function({
-  Value<int> id,
-  Value<int> noteId,
+  Value<String> id,
+  Value<String> noteId,
   Value<String> type,
   Value<String> path,
   Value<int> position,
+  Value<int> rowid,
 });
 
 final class $$MediaItemsTableReferences
@@ -2268,7 +2334,7 @@ final class $$MediaItemsTableReferences
       .createAlias($_aliasNameGenerator(db.mediaItems.noteId, db.notes.id));
 
   $$NotesTableProcessedTableManager get noteId {
-    final $_column = $_itemColumn<int>('note_id')!;
+    final $_column = $_itemColumn<String>('note_id')!;
 
     final manager = $$NotesTableTableManager($_db, $_db.notes)
         .filter((f) => f.id.sqlEquals($_column));
@@ -2288,7 +2354,7 @@ class $$MediaItemsTableFilterComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnFilters<int> get id => $composableBuilder(
+  ColumnFilters<String> get id => $composableBuilder(
       column: $table.id, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<String> get type => $composableBuilder(
@@ -2330,7 +2396,7 @@ class $$MediaItemsTableOrderingComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnOrderings<int> get id => $composableBuilder(
+  ColumnOrderings<String> get id => $composableBuilder(
       column: $table.id, builder: (column) => ColumnOrderings(column));
 
   ColumnOrderings<String> get type => $composableBuilder(
@@ -2372,7 +2438,7 @@ class $$MediaItemsTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  GeneratedColumn<int> get id =>
+  GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
   GeneratedColumn<String> get type =>
@@ -2428,11 +2494,12 @@ class $$MediaItemsTableTableManager extends RootTableManager<
           createComputedFieldComposer: () =>
               $$MediaItemsTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback: ({
-            Value<int> id = const Value.absent(),
-            Value<int> noteId = const Value.absent(),
+            Value<String> id = const Value.absent(),
+            Value<String> noteId = const Value.absent(),
             Value<String> type = const Value.absent(),
             Value<String> path = const Value.absent(),
             Value<int> position = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
           }) =>
               MediaItemsCompanion(
             id: id,
@@ -2440,13 +2507,15 @@ class $$MediaItemsTableTableManager extends RootTableManager<
             type: type,
             path: path,
             position: position,
+            rowid: rowid,
           ),
           createCompanionCallback: ({
-            Value<int> id = const Value.absent(),
-            required int noteId,
+            required String id,
+            required String noteId,
             required String type,
             required String path,
             Value<int> position = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
           }) =>
               MediaItemsCompanion.insert(
             id: id,
@@ -2454,6 +2523,7 @@ class $$MediaItemsTableTableManager extends RootTableManager<
             type: type,
             path: path,
             position: position,
+            rowid: rowid,
           ),
           withReferenceMapper: (p0) => p0
               .map((e) => (
@@ -2512,16 +2582,18 @@ typedef $$MediaItemsTableProcessedTableManager = ProcessedTableManager<
     MediaItem,
     PrefetchHooks Function({bool noteId})>;
 typedef $$TopicsTableCreateCompanionBuilder = TopicsCompanion Function({
-  Value<int> id,
+  required String id,
   required String name,
-  Value<int?> parentId,
+  Value<String?> parentId,
   Value<int> order,
+  Value<int> rowid,
 });
 typedef $$TopicsTableUpdateCompanionBuilder = TopicsCompanion Function({
-  Value<int> id,
+  Value<String> id,
   Value<String> name,
-  Value<int?> parentId,
+  Value<String?> parentId,
   Value<int> order,
+  Value<int> rowid,
 });
 
 final class $$TopicsTableReferences
@@ -2532,7 +2604,7 @@ final class $$TopicsTableReferences
       .createAlias($_aliasNameGenerator(db.topics.parentId, db.topics.id));
 
   $$TopicsTableProcessedTableManager? get parentId {
-    final $_column = $_itemColumn<int>('parent_id');
+    final $_column = $_itemColumn<String>('parent_id');
     if ($_column == null) return null;
     final manager = $$TopicsTableTableManager($_db, $_db.topics)
         .filter((f) => f.id.sqlEquals($_column));
@@ -2549,7 +2621,7 @@ final class $$TopicsTableReferences
 
   $$NoteTopicsTableProcessedTableManager get noteTopicsRefs {
     final manager = $$NoteTopicsTableTableManager($_db, $_db.noteTopics)
-        .filter((f) => f.topicId.id.sqlEquals($_itemColumn<int>('id')!));
+        .filter((f) => f.topicId.id.sqlEquals($_itemColumn<String>('id')!));
 
     final cache = $_typedResult.readTableOrNull(_noteTopicsRefsTable($_db));
     return ProcessedTableManager(
@@ -2565,7 +2637,7 @@ class $$TopicsTableFilterComposer extends Composer<_$AppDb, $TopicsTable> {
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnFilters<int> get id => $composableBuilder(
+  ColumnFilters<String> get id => $composableBuilder(
       column: $table.id, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<String> get name => $composableBuilder(
@@ -2624,7 +2696,7 @@ class $$TopicsTableOrderingComposer extends Composer<_$AppDb, $TopicsTable> {
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnOrderings<int> get id => $composableBuilder(
+  ColumnOrderings<String> get id => $composableBuilder(
       column: $table.id, builder: (column) => ColumnOrderings(column));
 
   ColumnOrderings<String> get name => $composableBuilder(
@@ -2662,7 +2734,7 @@ class $$TopicsTableAnnotationComposer extends Composer<_$AppDb, $TopicsTable> {
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  GeneratedColumn<int> get id =>
+  GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
   GeneratedColumn<String> get name =>
@@ -2736,28 +2808,32 @@ class $$TopicsTableTableManager extends RootTableManager<
           createComputedFieldComposer: () =>
               $$TopicsTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback: ({
-            Value<int> id = const Value.absent(),
+            Value<String> id = const Value.absent(),
             Value<String> name = const Value.absent(),
-            Value<int?> parentId = const Value.absent(),
+            Value<String?> parentId = const Value.absent(),
             Value<int> order = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
           }) =>
               TopicsCompanion(
             id: id,
             name: name,
             parentId: parentId,
             order: order,
+            rowid: rowid,
           ),
           createCompanionCallback: ({
-            Value<int> id = const Value.absent(),
+            required String id,
             required String name,
-            Value<int?> parentId = const Value.absent(),
+            Value<String?> parentId = const Value.absent(),
             Value<int> order = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
           }) =>
               TopicsCompanion.insert(
             id: id,
             name: name,
             parentId: parentId,
             order: order,
+            rowid: rowid,
           ),
           withReferenceMapper: (p0) => p0
               .map((e) =>
@@ -2826,14 +2902,16 @@ typedef $$TopicsTableProcessedTableManager = ProcessedTableManager<
     Topic,
     PrefetchHooks Function({bool parentId, bool noteTopicsRefs})>;
 typedef $$NoteTopicsTableCreateCompanionBuilder = NoteTopicsCompanion Function({
-  Value<int> id,
-  required int noteId,
-  required int topicId,
+  required String id,
+  required String noteId,
+  required String topicId,
+  Value<int> rowid,
 });
 typedef $$NoteTopicsTableUpdateCompanionBuilder = NoteTopicsCompanion Function({
-  Value<int> id,
-  Value<int> noteId,
-  Value<int> topicId,
+  Value<String> id,
+  Value<String> noteId,
+  Value<String> topicId,
+  Value<int> rowid,
 });
 
 final class $$NoteTopicsTableReferences
@@ -2844,7 +2922,7 @@ final class $$NoteTopicsTableReferences
       .createAlias($_aliasNameGenerator(db.noteTopics.noteId, db.notes.id));
 
   $$NotesTableProcessedTableManager get noteId {
-    final $_column = $_itemColumn<int>('note_id')!;
+    final $_column = $_itemColumn<String>('note_id')!;
 
     final manager = $$NotesTableTableManager($_db, $_db.notes)
         .filter((f) => f.id.sqlEquals($_column));
@@ -2858,7 +2936,7 @@ final class $$NoteTopicsTableReferences
       .createAlias($_aliasNameGenerator(db.noteTopics.topicId, db.topics.id));
 
   $$TopicsTableProcessedTableManager get topicId {
-    final $_column = $_itemColumn<int>('topic_id')!;
+    final $_column = $_itemColumn<String>('topic_id')!;
 
     final manager = $$TopicsTableTableManager($_db, $_db.topics)
         .filter((f) => f.id.sqlEquals($_column));
@@ -2878,7 +2956,7 @@ class $$NoteTopicsTableFilterComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnFilters<int> get id => $composableBuilder(
+  ColumnFilters<String> get id => $composableBuilder(
       column: $table.id, builder: (column) => ColumnFilters(column));
 
   $$NotesTableFilterComposer get noteId {
@@ -2931,7 +3009,7 @@ class $$NoteTopicsTableOrderingComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnOrderings<int> get id => $composableBuilder(
+  ColumnOrderings<String> get id => $composableBuilder(
       column: $table.id, builder: (column) => ColumnOrderings(column));
 
   $$NotesTableOrderingComposer get noteId {
@@ -2984,7 +3062,7 @@ class $$NoteTopicsTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  GeneratedColumn<int> get id =>
+  GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
   $$NotesTableAnnotationComposer get noteId {
@@ -3051,24 +3129,28 @@ class $$NoteTopicsTableTableManager extends RootTableManager<
           createComputedFieldComposer: () =>
               $$NoteTopicsTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback: ({
-            Value<int> id = const Value.absent(),
-            Value<int> noteId = const Value.absent(),
-            Value<int> topicId = const Value.absent(),
+            Value<String> id = const Value.absent(),
+            Value<String> noteId = const Value.absent(),
+            Value<String> topicId = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
           }) =>
               NoteTopicsCompanion(
             id: id,
             noteId: noteId,
             topicId: topicId,
+            rowid: rowid,
           ),
           createCompanionCallback: ({
-            Value<int> id = const Value.absent(),
-            required int noteId,
-            required int topicId,
+            required String id,
+            required String noteId,
+            required String topicId,
+            Value<int> rowid = const Value.absent(),
           }) =>
               NoteTopicsCompanion.insert(
             id: id,
             noteId: noteId,
             topicId: topicId,
+            rowid: rowid,
           ),
           withReferenceMapper: (p0) => p0
               .map((e) => (
@@ -3137,19 +3219,20 @@ typedef $$NoteTopicsTableProcessedTableManager = ProcessedTableManager<
     NoteTopic,
     PrefetchHooks Function({bool noteId, bool topicId})>;
 typedef $$StepsTableCreateCompanionBuilder = StepsCompanion Function({
-  Value<int> id,
-  required int noteId,
-  Value<int> stepOrder,
+  required String id,
+  required String noteId,
+  required int stepOrder,
   required String title,
   Value<String?> description,
   Value<String?> imageUrl,
   Value<String?> duration,
   Value<String?> notes,
   Value<DateTime> createdAt,
+  Value<int> rowid,
 });
 typedef $$StepsTableUpdateCompanionBuilder = StepsCompanion Function({
-  Value<int> id,
-  Value<int> noteId,
+  Value<String> id,
+  Value<String> noteId,
   Value<int> stepOrder,
   Value<String> title,
   Value<String?> description,
@@ -3157,6 +3240,7 @@ typedef $$StepsTableUpdateCompanionBuilder = StepsCompanion Function({
   Value<String?> duration,
   Value<String?> notes,
   Value<DateTime> createdAt,
+  Value<int> rowid,
 });
 
 final class $$StepsTableReferences
@@ -3167,7 +3251,7 @@ final class $$StepsTableReferences
       db.notes.createAlias($_aliasNameGenerator(db.steps.noteId, db.notes.id));
 
   $$NotesTableProcessedTableManager get noteId {
-    final $_column = $_itemColumn<int>('note_id')!;
+    final $_column = $_itemColumn<String>('note_id')!;
 
     final manager = $$NotesTableTableManager($_db, $_db.notes)
         .filter((f) => f.id.sqlEquals($_column));
@@ -3186,7 +3270,7 @@ class $$StepsTableFilterComposer extends Composer<_$AppDb, $StepsTable> {
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnFilters<int> get id => $composableBuilder(
+  ColumnFilters<String> get id => $composableBuilder(
       column: $table.id, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<int> get stepOrder => $composableBuilder(
@@ -3239,7 +3323,7 @@ class $$StepsTableOrderingComposer extends Composer<_$AppDb, $StepsTable> {
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnOrderings<int> get id => $composableBuilder(
+  ColumnOrderings<String> get id => $composableBuilder(
       column: $table.id, builder: (column) => ColumnOrderings(column));
 
   ColumnOrderings<int> get stepOrder => $composableBuilder(
@@ -3292,7 +3376,7 @@ class $$StepsTableAnnotationComposer extends Composer<_$AppDb, $StepsTable> {
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  GeneratedColumn<int> get id =>
+  GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
   GeneratedColumn<int> get stepOrder =>
@@ -3360,8 +3444,8 @@ class $$StepsTableTableManager extends RootTableManager<
           createComputedFieldComposer: () =>
               $$StepsTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback: ({
-            Value<int> id = const Value.absent(),
-            Value<int> noteId = const Value.absent(),
+            Value<String> id = const Value.absent(),
+            Value<String> noteId = const Value.absent(),
             Value<int> stepOrder = const Value.absent(),
             Value<String> title = const Value.absent(),
             Value<String?> description = const Value.absent(),
@@ -3369,6 +3453,7 @@ class $$StepsTableTableManager extends RootTableManager<
             Value<String?> duration = const Value.absent(),
             Value<String?> notes = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
           }) =>
               StepsCompanion(
             id: id,
@@ -3380,17 +3465,19 @@ class $$StepsTableTableManager extends RootTableManager<
             duration: duration,
             notes: notes,
             createdAt: createdAt,
+            rowid: rowid,
           ),
           createCompanionCallback: ({
-            Value<int> id = const Value.absent(),
-            required int noteId,
-            Value<int> stepOrder = const Value.absent(),
+            required String id,
+            required String noteId,
+            required int stepOrder,
             required String title,
             Value<String?> description = const Value.absent(),
             Value<String?> imageUrl = const Value.absent(),
             Value<String?> duration = const Value.absent(),
             Value<String?> notes = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
           }) =>
               StepsCompanion.insert(
             id: id,
@@ -3402,6 +3489,7 @@ class $$StepsTableTableManager extends RootTableManager<
             duration: duration,
             notes: notes,
             createdAt: createdAt,
+            rowid: rowid,
           ),
           withReferenceMapper: (p0) => p0
               .map((e) =>

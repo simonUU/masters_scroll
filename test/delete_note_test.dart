@@ -9,7 +9,7 @@ void main() {
 
     setUp(() {
       // Create an in-memory database for testing
-      database = AppDatabase(NativeDatabase.memory());
+      database = AppDb.forTesting(NativeDatabase.memory());
     });
 
     tearDown(() async {
@@ -27,12 +27,12 @@ void main() {
       // Create grandchild note
       final grandchildId = await database.createNote('Grandchild', 'Grandchild content', parentId: child1Id);
       
-      // Verify initial structure
-      final initialTopLevel = await database.getTopLevelNotes();
+      // Verify initial structure (including seeded data)
+      final initialTopLevel = await database.getRootNotes();
       final initialChildren = await database.getChildNotes(parentId);
       final initialGrandchildren = await database.getChildNotes(child1Id);
       
-      expect(initialTopLevel.length, 1); // Only parent at top level
+      expect(initialTopLevel.length, 2); // Parent note + seeded "Front Kick" note
       expect(initialChildren.length, 2); // Two children
       expect(initialGrandchildren.length, 1); // One grandchild
       
@@ -40,10 +40,10 @@ void main() {
       await database.deleteNote(parentId);
       
       // Verify child notes moved to top level
-      final newTopLevel = await database.getTopLevelNotes();
+      final newTopLevel = await database.getRootNotes();
       final remainingChildren = await database.getChildNotes(child1Id);
       
-      expect(newTopLevel.length, 2); // Child1 and Child2 should be at top level now
+      expect(newTopLevel.length, 3); // Seeded note + Child1 + Child2 should be at top level now
       expect(remainingChildren.length, 1); // Grandchild should still be under Child1
       
       // Verify the child notes are the correct ones

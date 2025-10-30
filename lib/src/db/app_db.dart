@@ -4,57 +4,76 @@ import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
+import 'package:uuid/uuid.dart';
 
 part 'app_db.g.dart';
 
 class Notes extends Table {
-  IntColumn get id => integer().autoIncrement()();
+  TextColumn get id => text()();
   TextColumn get title => text().withLength(min: 0, max: 250)();
   TextColumn get content => text().nullable()(); // Quill delta JSON
-  IntColumn get parentId => integer().nullable().references(Notes, #id)();
+  TextColumn get parentId => text().nullable().references(Notes, #id)();
   IntColumn get sortOrder => integer().withDefault(const Constant(0))();
   BoolColumn get isExpanded => boolean().withDefault(const Constant(true))();
   DateTimeColumn get createdAt => dateTime().clientDefault(() => DateTime.now())();
   DateTimeColumn get updatedAt => dateTime().nullable()();
+  
+  @override
+  Set<Column> get primaryKey => {id};
 }
 
 class MediaItems extends Table {
-  IntColumn get id => integer().autoIncrement()();
-  IntColumn get noteId => integer().customConstraint('NOT NULL REFERENCES notes(id) ON DELETE CASCADE')();
+  TextColumn get id => text()();
+  TextColumn get noteId => text().customConstraint('NOT NULL REFERENCES notes(id) ON DELETE CASCADE')();
   TextColumn get type => text().withLength(min: 0, max: 20)(); // image/video
   TextColumn get path => text()(); // local file path or URL
   IntColumn get position => integer().withDefault(const Constant(0))();
+  
+  @override
+  Set<Column> get primaryKey => {id};
 }
 
 class Topics extends Table {
-  IntColumn get id => integer().autoIncrement()();
+  TextColumn get id => text()();
   TextColumn get name => text().withLength(min: 1, max: 200)();
-  IntColumn get parentId => integer().nullable().references(Topics, #id)();
+  TextColumn get parentId => text().nullable().references(Topics, #id)();
   IntColumn get order => integer().withDefault(const Constant(0))();
+  
+  @override
+  Set<Column> get primaryKey => {id};
 }
 
 class NoteTopics extends Table {
-  IntColumn get id => integer().autoIncrement()();
-  IntColumn get noteId => integer().customConstraint('NOT NULL REFERENCES notes(id) ON DELETE CASCADE')();
-  IntColumn get topicId => integer().customConstraint('NOT NULL REFERENCES topics(id) ON DELETE CASCADE')();
+  TextColumn get id => text()();
+  TextColumn get noteId => text().customConstraint('NOT NULL REFERENCES notes(id) ON DELETE CASCADE')();
+  TextColumn get topicId => text().customConstraint('NOT NULL REFERENCES topics(id) ON DELETE CASCADE')();
+  
+  @override
+  Set<Column> get primaryKey => {id};
 }
 
 class Steps extends Table {
-  IntColumn get id => integer().autoIncrement()();
-  IntColumn get noteId => integer().customConstraint('NOT NULL REFERENCES notes(id) ON DELETE CASCADE')();
-  IntColumn get stepOrder => integer().withDefault(const Constant(0))();
-  TextColumn get title => text().withLength(min: 0, max: 200)();
+  TextColumn get id => text()();
+  TextColumn get noteId => text().customConstraint('NOT NULL REFERENCES notes(id) ON DELETE CASCADE')();
+  IntColumn get stepOrder => integer()();
+  TextColumn get title => text().withLength(min: 1, max: 250)();
   TextColumn get description => text().nullable()();
   TextColumn get imageUrl => text().nullable()();
-  TextColumn get duration => text().nullable()();
-  TextColumn get notes => text().nullable()();
+  TextColumn get duration => text().nullable()(); // stored as string for flexibility
+  TextColumn get notes => text().nullable()(); // additional notes for step
   DateTimeColumn get createdAt => dateTime().clientDefault(() => DateTime.now())();
+  
+  @override
+  Set<Column> get primaryKey => {id};
 }
 
 /// The App Database
 @DriftDatabase(tables: [Notes, MediaItems, Topics, NoteTopics, Steps])
 class AppDb extends _$AppDb {
   AppDb() : super(_openConnection());
+  
+  // Constructor for testing
+  AppDb.forTesting(QueryExecutor executor) : super(executor);
 
   static LazyDatabase _openConnection() {
     return LazyDatabase(() async {
@@ -78,34 +97,45 @@ class AppDb extends _$AppDb {
   }
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (Migrator m) async {
       await m.createAll();
+      // Seed with sample data for new installations
+      await seedSampleData();
     },
     onUpgrade: (Migrator m, int from, int to) async {
-      if (from < 2) {
-        // Add the new columns for hierarchical notes
-        await m.addColumn(notes, notes.parentId);
-        await m.addColumn(notes, notes.sortOrder);  
-        await m.addColumn(notes, notes.isExpanded);
-      }
-      // For now, recreate all tables when upgrading to version 3
-      if (from < 3) {
+      // For development: recreate all tables with new UUID schema
+      if (from < 4) {
+        // Drop existing tables manually
+        await customStatement('DROP TABLE IF EXISTS note_topics');
+        await customStatement('DROP TABLE IF EXISTS steps');
+        await customStatement('DROP TABLE IF EXISTS media_items');
+        await customStatement('DROP TABLE IF EXISTS notes');
+        await customStatement('DROP TABLE IF EXISTS topics');
+        
+        // Recreate all tables with new schema
         await m.createAll();
+        
+        // Seed with sample data
+        await seedSampleData();
       }
     },
-  );
-
-  Future<void> seedSampleData() async {
-    // simple seed
-    final idStyle = await into(topics).insert(TopicsCompanion.insert(name: 'Style', parentId: Value(null)));
-    await into(topics).insert(TopicsCompanion.insert(name: 'Krav Maga', parentId: Value(idStyle)));
-    final idStriking = await into(topics).insert(TopicsCompanion.insert(name: 'Striking', parentId: Value(null)));
-    final noteId = await into(notes).insert(NotesCompanion.insert(title: 'Front Kick', content: Value('')));
-    await into(noteTopics).insert(NoteTopicsCompanion.insert(noteId: noteId, topicId: idStriking));
+  );  Future<void> seedSampleData() async {
+    const uuid = Uuid();
+    
+    // simple seed with UUIDs
+    final styleId = uuid.v4();
+    final strikingId = uuid.v4();
+    final noteId = uuid.v4();
+    
+    await into(topics).insert(TopicsCompanion.insert(id: styleId, name: 'Style', parentId: Value(null)));
+    await into(topics).insert(TopicsCompanion.insert(id: uuid.v4(), name: 'Krav Maga', parentId: Value(styleId)));
+    await into(topics).insert(TopicsCompanion.insert(id: strikingId, name: 'Striking', parentId: Value(null)));
+    await into(notes).insert(NotesCompanion.insert(id: noteId, title: 'Front Kick', content: Value('')));
+    await into(noteTopics).insert(NoteTopicsCompanion.insert(id: uuid.v4(), noteId: noteId, topicId: strikingId));
   }
 
   // Basic queries
@@ -115,7 +145,7 @@ class AppDb extends _$AppDb {
 
   Future<List<Topic>> getAllTopicsOnce() => (select(topics)..orderBy([(t) => OrderingTerm(expression: t.order)])).get();
 
-  Stream<List<Note>> watchNotesForTopic(int? topicId) {
+  Stream<List<Note>> watchNotesForTopic(String? topicId) {
     if (topicId == null) {
       // unsorted: notes without topics
       final q = select(notes).watch();
@@ -132,8 +162,11 @@ class AppDb extends _$AppDb {
     }
   }
 
-  Future<int> createNote(String title, String? content, {List<int>? topicIds, int? parentId}) async {
-    // Get the max sort order for siblings
+  Future<String> createNote(String title, String? content, {List<String>? topicIds, String? parentId}) async {
+    const uuid = Uuid();
+    final noteId = uuid.v4();
+
+    // Determine sort order
     int sortOrder = 0;
     if (parentId != null) {
       final siblings = await (select(notes)..where((n) => n.parentId.equals(parentId))).get();
@@ -142,32 +175,39 @@ class AppDb extends _$AppDb {
       final topLevel = await (select(notes)..where((n) => n.parentId.isNull())).get();
       sortOrder = topLevel.length;
     }
-    
-    final noteId = await into(notes).insert(NotesCompanion.insert(
-      title: title, 
+
+    await into(notes).insert(NotesCompanion.insert(
+      id: noteId,
+      title: title,
       content: Value(content),
       parentId: Value(parentId),
       sortOrder: Value(sortOrder),
     ));
-    
+
+    // Link to topics if provided
     if (topicIds != null) {
-      for (final t in topicIds) {
-        await into(noteTopics).insert(NoteTopicsCompanion.insert(noteId: noteId, topicId: t));
+      for (final topicId in topicIds) {
+        await into(noteTopics).insert(NoteTopicsCompanion.insert(
+          id: uuid.v4(),
+          noteId: noteId,
+          topicId: topicId,
+        ));
       }
     }
+
     return noteId;
+  }
+
+  Future<List<Note>> getChildNotes(String parentId) async {
+    return await (select(notes)
+      ..where((n) => n.parentId.equals(parentId))
+      ..orderBy([(n) => OrderingTerm(expression: n.sortOrder)])
+    ).get();
   }
 
   // Get hierarchical notes as a tree structure
   Stream<List<Note>> watchHierarchicalNotes() {
     return (select(notes)..orderBy([(n) => OrderingTerm(expression: n.sortOrder)])).watch();
-  }
-
-  Future<List<Note>> getChildNotes(int parentId) async {
-    return await (select(notes)
-      ..where((n) => n.parentId.equals(parentId))
-      ..orderBy([(n) => OrderingTerm(expression: n.sortOrder)])
-    ).get();
   }
 
   Future<List<Note>> getRootNotes() async {
@@ -177,7 +217,7 @@ class AppDb extends _$AppDb {
     ).get();
   }
 
-  Future<void> moveNote(int noteId, int? newParentId, int newSortOrder) async {
+  Future<void> moveNote(String noteId, String? newParentId, int newSortOrder) async {
     await (update(notes)..where((n) => n.id.equals(noteId))).write(NotesCompanion(
       parentId: Value(newParentId),
       sortOrder: Value(newSortOrder),
@@ -185,22 +225,22 @@ class AppDb extends _$AppDb {
     ));
   }
 
-  Future<void> toggleNoteExpanded(int noteId, bool isExpanded) async {
+  Future<void> toggleNoteExpanded(String noteId, bool isExpanded) async {
     await (update(notes)..where((n) => n.id.equals(noteId))).write(NotesCompanion(
       isExpanded: Value(isExpanded),
       updatedAt: Value(DateTime.now()),
     ));
   }
 
-  Future<Note?> getNoteById(int id) async {
+  Future<Note?> getNoteById(String id) async {
     return await (select(notes)..where((tbl) => tbl.id.equals(id))).getSingleOrNull();
   }
 
-  Future<void> updateNoteContent(int id, String? content, {String? title}) async {
+  Future<void> updateNoteContent(String id, String? content, {String? title}) async {
     await (update(notes)..where((tbl) => tbl.id.equals(id))).write(NotesCompanion(content: Value(content), title: title != null ? Value(title) : Value.absent(), updatedAt: Value(DateTime.now())));
   }
 
-  Future<void> deleteNote(int id) async {
+  Future<void> deleteNote(String id) async {
     // First, get the note that's being deleted to know its parentId and sortOrder
     final noteToDelete = await (select(notes)..where((tbl) => tbl.id.equals(id))).getSingleOrNull();
     if (noteToDelete == null) return; // Note doesn't exist
@@ -254,31 +294,37 @@ class AppDb extends _$AppDb {
     await (delete(notes)..where((tbl) => tbl.id.equals(id))).go();
   }
 
-  Future<void> addMedia(int noteId, String type, String path, {int position = 0}) async {
-    await into(mediaItems).insert(MediaItemsCompanion.insert(noteId: noteId, type: type, path: path, position: Value(position)));
+  Future<void> addMedia(String noteId, String type, String path, {int position = 0}) async {
+    const uuid = Uuid();
+    await into(mediaItems).insert(MediaItemsCompanion.insert(id: uuid.v4(), noteId: noteId, type: type, path: path, position: Value(position)));
   }
 
-  Future<List<MediaItem>> getMediaForNoteOnce(int noteId) => (select(mediaItems)..where((m) => m.noteId.equals(noteId))..orderBy([(m) => OrderingTerm(expression: m.position)])).get();
+  Future<List<MediaItem>> getMediaForNoteOnce(String noteId) => (select(mediaItems)..where((m) => m.noteId.equals(noteId))..orderBy([(m) => OrderingTerm(expression: m.position)])).get();
 
   // Steps methods
-  Future<List<Step>> getStepsForNote(int noteId) => (select(steps)..where((s) => s.noteId.equals(noteId))..orderBy([(s) => OrderingTerm(expression: s.stepOrder)])).get();
+  Future<List<Step>> getStepsForNote(String noteId) => (select(steps)..where((s) => s.noteId.equals(noteId))..orderBy([(s) => OrderingTerm(expression: s.stepOrder)])).get();
 
-  Future<int> createStep(int noteId, String title, {String? description, String? imageUrl, String? duration, String? notes}) async {
+  Future<String> createStep(String noteId, String title, {String? description, String? imageUrl, String? duration, String? notes}) async {
+    const uuid = Uuid();
+    final stepId = uuid.v4();
     final maxOrder = await (selectOnly(steps)..addColumns([steps.stepOrder.max()])..where(steps.noteId.equals(noteId))).getSingle();
     final nextOrder = (maxOrder.read(steps.stepOrder.max()) ?? 0) + 1;
     
-    return await into(steps).insert(StepsCompanion.insert(
+    await into(steps).insert(StepsCompanion.insert(
+      id: stepId,
       noteId: noteId,
-      stepOrder: Value(nextOrder),
+      stepOrder: nextOrder,
       title: title,
       description: Value(description),
       imageUrl: Value(imageUrl),
       duration: Value(duration),
       notes: Value(notes),
     ));
+    
+    return stepId;
   }
 
-  Future<void> updateStep(int stepId, {String? title, String? description, String? imageUrl, String? duration, String? notes}) async {
+  Future<void> updateStep(String stepId, {String? title, String? description, String? imageUrl, String? duration, String? notes}) async {
     await (update(steps)..where((s) => s.id.equals(stepId))).write(StepsCompanion(
       title: title != null ? Value(title) : Value.absent(),
       description: Value(description),
@@ -288,11 +334,11 @@ class AppDb extends _$AppDb {
     ));
   }
 
-  Future<void> deleteStep(int stepId) async {
+  Future<void> deleteStep(String stepId) async {
     await (delete(steps)..where((s) => s.id.equals(stepId))).go();
   }
 
-  Future<void> reorderSteps(int noteId, List<int> stepIds) async {
+  Future<void> reorderSteps(String noteId, List<String> stepIds) async {
     await transaction(() async {
       for (int i = 0; i < stepIds.length; i++) {
         await (update(steps)..where((s) => s.id.equals(stepIds[i]))).write(StepsCompanion(

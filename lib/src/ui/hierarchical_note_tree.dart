@@ -13,7 +13,7 @@ class HierarchicalNoteTree extends StatefulWidget {
 }
 
 class _HierarchicalNoteTreeState extends State<HierarchicalNoteTree> {
-  final Map<int, bool> _expandedStates = {};
+  final Map<String, bool> _expandedStates = {};
 
   @override
   Widget build(BuildContext context) {
@@ -377,7 +377,7 @@ class _HierarchicalNoteTreeState extends State<HierarchicalNoteTree> {
     );
   }
 
-  Future<void> _createChildNote(int parentId) async {
+  Future<void> _createChildNote(String parentId) async {
     final db = Provider.of<AppDb>(context, listen: false);
     final noteId = await db.createNote('New Sub-note', '', parentId: parentId);
     if (mounted) {
@@ -449,13 +449,13 @@ class _HierarchicalNoteTreeState extends State<HierarchicalNoteTree> {
     );
   }
 
-  bool _isDescendant(int potentialParentId, int nodeId, List<Note> allNotes) {
+  bool _isDescendant(String potentialParentId, String nodeId, List<Note> allNotes) {
     final descendants = _getAllDescendants(nodeId, allNotes);
     return descendants.contains(potentialParentId);
   }
 
-  Set<int> _getAllDescendants(int nodeId, List<Note> allNotes) {
-    final descendants = <int>{};
+  Set<String> _getAllDescendants(String nodeId, List<Note> allNotes) {
+    final descendants = <String>{};
     final children = allNotes.where((n) => n.parentId == nodeId);
     
     for (final child in children) {

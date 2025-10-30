@@ -8,11 +8,13 @@ import '../note_view_state.dart';
 class StepCard extends StatefulWidget {
   final db.Step step;
   final VoidCallback? onDelete;
+  final bool startInEditMode;
 
   const StepCard({
     super.key,
     required this.step,
     this.onDelete,
+    this.startInEditMode = false,
   });
 
   @override
@@ -21,6 +23,7 @@ class StepCard extends StatefulWidget {
 
 class _StepCardState extends State<StepCard> {
   late TextEditingController _titleController;
+  late FocusNode _titleFocusNode;
   bool _isEditing = false;
   bool _isLoading = false;
 
@@ -28,17 +31,44 @@ class _StepCardState extends State<StepCard> {
   void initState() {
     super.initState();
     _titleController = TextEditingController(text: widget.step.title);
+    _titleFocusNode = FocusNode();
+    _isEditing = widget.startInEditMode;
+    
+    // If starting in edit mode, focus and select all text after build
+    if (widget.startInEditMode) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _titleFocusNode.requestFocus();
+        _titleController.selection = TextSelection(
+          baseOffset: 0,
+          extentOffset: _titleController.text.length,
+        );
+        
+        // Clear the newly added step tracking in the parent state
+        final noteViewState = Provider.of<NoteViewState>(context, listen: false);
+        noteViewState.clearNewlyAddedStepId();
+      });
+    }
   }
 
   @override
   void dispose() {
     _titleController.dispose();
+    _titleFocusNode.dispose();
     super.dispose();
   }
 
   void _startEditing() {
     setState(() {
       _isEditing = true;
+    });
+    
+    // Focus the text field and select all text
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _titleFocusNode.requestFocus();
+      _titleController.selection = TextSelection(
+        baseOffset: 0,
+        extentOffset: _titleController.text.length,
+      );
     });
   }
 
@@ -178,6 +208,7 @@ class _StepCardState extends State<StepCard> {
                       Expanded(
                         child: TextField(
                           controller: _titleController,
+                          focusNode: _titleFocusNode,
                           style: Theme.of(context).textTheme.bodyMedium,
                           decoration: const InputDecoration(
                             hintText: 'Step description...',
@@ -186,7 +217,7 @@ class _StepCardState extends State<StepCard> {
                             isDense: true,
                           ),
                           maxLines: null,
-                          autofocus: true,
+                          autofocus: _isEditing,
                         ),
                       ),
                       if (_isLoading)

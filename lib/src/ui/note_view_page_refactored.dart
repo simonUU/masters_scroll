@@ -9,7 +9,7 @@ import 'note_view/sections/steps_section.dart';
 import 'note_view/sections/metadata_section.dart';
 
 class NoteViewPageRefactored extends StatefulWidget {
-  final int noteId;
+  final String noteId;
   final bool startInEditMode;
 
   const NoteViewPageRefactored({
