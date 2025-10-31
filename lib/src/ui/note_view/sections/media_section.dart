@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../note_view_state.dart';
 import '../widgets/simple_section.dart';
 import '../widgets/empty_state_widget.dart';
+import '../../../constants/spacing.dart';
 
 class MediaSection extends StatelessWidget {
   const MediaSection({super.key});
@@ -18,14 +19,14 @@ class MediaSection extends StatelessWidget {
         }
         
         return SimpleSection(
-          padding: EdgeInsets.zero,
-          backgroundColor: state.media.isNotEmpty ? Colors.grey.shade50 : null,
+          padding: AppSpacing.zero,
+          backgroundColor: state.media.isNotEmpty ? Colors.grey.shade200 : null,
           child: Column(
             children: [
               // Add photo button when editing
               if (state.isEditing)
                 Container(
-                  padding: const EdgeInsets.all(16),
+                  padding: AppSpacing.sectionPadding,
                   child: SizedBox(
                     width: double.infinity,
                     child: OutlinedButton.icon(
@@ -36,35 +37,33 @@ class MediaSection extends StatelessWidget {
                   ),
                 ),
               
-              // Media grid or empty state
+              // Media horizontal scroll or empty state
               if (state.media.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.all(16),
-                  child: EmptyStateWidget(
+                Padding(
+                  padding: AppSpacing.sectionPadding,
+                  child: const EmptyStateWidget(
                     icon: Icons.photo,
                     message: 'No media added yet',
                     subtitle: 'Tap "Add Photo" to get started',
                   ),
                 )
               else
-                Container(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                  child: GridView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 3,
-                      crossAxisSpacing: 8,
-                      mainAxisSpacing: 8,
+                Padding(
+                  padding: AppSpacing.onlyBottom,
+                  child: SizedBox(
+                    height: MediaSpacing.thumbnailSize,
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      padding: AppSpacing.zero,
+                      itemCount: state.media.length,
+                      itemBuilder: (context, index) {
+                        final mediaItem = state.media[index];
+                        return _MediaThumbnail(
+                          mediaItem: mediaItem,
+                          onTap: () => _showMediaFullScreen(context, mediaItem),
+                        );
+                      },
                     ),
-                    itemCount: state.media.length,
-                    itemBuilder: (context, index) {
-                      final mediaItem = state.media[index];
-                      return _MediaThumbnail(
-                        mediaItem: mediaItem,
-                        onTap: () => _showMediaFullScreen(context, mediaItem),
-                      );
-                    },
                   ),
                 ),
             ],
@@ -88,8 +87,8 @@ class MediaSection extends StatelessWidget {
               ),
             ),
             Positioned(
-              top: 16,
-              right: 16,
+              top: AppSpacing.xl,
+              right: AppSpacing.xl,
               child: IconButton(
                 icon: const Icon(Icons.close, color: Colors.white),
                 onPressed: () => Navigator.of(context).pop(),
@@ -115,26 +114,21 @@ class _MediaThumbnail extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Colors.grey[300]!),
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(8),
-          child: Image.file(
-            File(mediaItem.path),
-            fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) {
-              return Container(
-                color: Colors.grey[200],
-                child: const Icon(
-                  Icons.broken_image,
-                  color: Colors.grey,
-                ),
-              );
-            },
-          ),
+      child: SizedBox(
+        width: MediaSpacing.thumbnailSize,
+        height: MediaSpacing.thumbnailSize,
+        child: Image.file(
+          File(mediaItem.path),
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            return Container(
+              color: Colors.grey[200],
+              child: const Icon(
+                Icons.broken_image,
+                color: Colors.grey,
+              ),
+            );
+          },
         ),
       ),
     );

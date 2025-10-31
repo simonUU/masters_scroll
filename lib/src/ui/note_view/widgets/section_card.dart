@@ -10,14 +10,14 @@ class SectionCard extends StatelessWidget {
   final double? minHeight;
   
   const SectionCard({
-    Key? key,
+    super.key,
     required this.title,
     required this.icon,
     required this.child,
     this.headerColor,
     this.trailing,
     this.minHeight,
-  }) : super(key: key);
+  });
   
   @override
   Widget build(BuildContext context) {

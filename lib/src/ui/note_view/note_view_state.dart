@@ -5,6 +5,8 @@ import 'package:flutter_quill/flutter_quill.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../../db/app_db.dart';
+import '../../services/camera_service.dart';
+import '../camera/camera_screen.dart';
 
 class NoteViewState extends ChangeNotifier {
   final String noteId;
@@ -169,7 +171,7 @@ class NoteViewState extends ChangeNotifier {
     final picker = ImagePicker();
     final image = await picker.pickImage(source: ImageSource.gallery);
     
-    if (image != null) {
+    if (image != null && context.mounted) {
       try {
         final db = Provider.of<AppDb>(context, listen: false);
         await db.addMedia(noteId, 'image', image.path);
@@ -305,12 +307,84 @@ class NoteViewState extends ChangeNotifier {
     final picker = ImagePicker();
     final image = await picker.pickImage(source: ImageSource.gallery);
     
-    if (image != null) {
+    if (image != null && context.mounted) {
       await updateStep(context, stepId, imageUrl: image.path);
       
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Step image added successfully')),
+        );
+      }
+    }
+  }
+
+  // Camera functionality
+  Future<void> openCameraMode(BuildContext context) async {
+    try {
+      // Check if camera is available
+      final hasCamera = await CameraService.checkCameraPermission();
+      if (!hasCamera) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Camera not available')),
+          );
+        }
+        return;
+      }
+
+      // Initialize cameras
+      await CameraService.initializeCameras();
+
+      if (context.mounted) {
+        // Navigate to camera screen
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => CameraScreen(
+              noteId: noteId,
+              onImageCaptured: (imagePath) => _onCameraImageCaptured(context, imagePath),
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error opening camera: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _onCameraImageCaptured(BuildContext context, String imagePath) async {
+    try {
+      final db = Provider.of<AppDb>(context, listen: false);
+      
+      // Generate step title based on current step count
+      final stepNumber = _steps.length + 1;
+      final stepTitle = 'Step $stepNumber';
+      
+      // Create step with image
+      final newStepId = await db.createStepWithImage(noteId, stepTitle, imagePath);
+      
+      // Also add the image to the media section
+      await db.addMedia(noteId, 'image', imagePath);
+      
+      // Track the newly added step
+      _newlyAddedStepId = newStepId;
+      
+      // Reload steps and media
+      final steps = await db.getStepsForNote(noteId);
+      _steps = steps;
+      
+      final media = await db.getMediaForNoteOnce(noteId);
+      _media = media;
+      
+      notifyListeners();
+      
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error creating step from camera: $e')),
         );
       }
     }

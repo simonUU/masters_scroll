@@ -23,6 +23,7 @@ dependencies:
 
   # Media picker
   image_picker: ^1.0.4
+  camera: ^0.11.3
 
   # Database (Drift)
   drift: ^2.14.1
@@ -31,7 +32,7 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^3.0.0
+  flutter_lints: ^6.0.0
   build_runner: ^2.4.7
   drift_dev: ^2.14.1
 

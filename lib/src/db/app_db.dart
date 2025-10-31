@@ -73,7 +73,7 @@ class AppDb extends _$AppDb {
   AppDb() : super(_openConnection());
   
   // Constructor for testing
-  AppDb.forTesting(QueryExecutor executor) : super(executor);
+  AppDb.forTesting(super.executor);
 
   static LazyDatabase _openConnection() {
     return LazyDatabase(() async {
@@ -131,10 +131,10 @@ class AppDb extends _$AppDb {
     final strikingId = uuid.v4();
     final noteId = uuid.v4();
     
-    await into(topics).insert(TopicsCompanion.insert(id: styleId, name: 'Style', parentId: Value(null)));
+    await into(topics).insert(TopicsCompanion.insert(id: styleId, name: 'Style', parentId: const Value(null)));
     await into(topics).insert(TopicsCompanion.insert(id: uuid.v4(), name: 'Krav Maga', parentId: Value(styleId)));
-    await into(topics).insert(TopicsCompanion.insert(id: strikingId, name: 'Striking', parentId: Value(null)));
-    await into(notes).insert(NotesCompanion.insert(id: noteId, title: 'Front Kick', content: Value('')));
+    await into(topics).insert(TopicsCompanion.insert(id: strikingId, name: 'Striking', parentId: const Value(null)));
+    await into(notes).insert(NotesCompanion.insert(id: noteId, title: 'Front Kick', content: const Value('')));
     await into(noteTopics).insert(NoteTopicsCompanion.insert(id: uuid.v4(), noteId: noteId, topicId: strikingId));
   }
 
@@ -237,7 +237,7 @@ class AppDb extends _$AppDb {
   }
 
   Future<void> updateNoteContent(String id, String? content, {String? title}) async {
-    await (update(notes)..where((tbl) => tbl.id.equals(id))).write(NotesCompanion(content: Value(content), title: title != null ? Value(title) : Value.absent(), updatedAt: Value(DateTime.now())));
+    await (update(notes)..where((tbl) => tbl.id.equals(id))).write(NotesCompanion(content: Value(content), title: title != null ? Value(title) : const Value.absent(), updatedAt: Value(DateTime.now())));
   }
 
   Future<void> deleteNote(String id) async {
@@ -324,13 +324,33 @@ class AppDb extends _$AppDb {
     return stepId;
   }
 
-  Future<void> updateStep(String stepId, {String? title, String? description, String? imageUrl, String? duration, String? notes}) async {
-    await (update(steps)..where((s) => s.id.equals(stepId))).write(StepsCompanion(
-      title: title != null ? Value(title) : Value.absent(),
+  Future<String> createStepWithImage(String noteId, String title, String imagePath, {String? description, String? duration, String? notes}) async {
+    const uuid = Uuid();
+    final stepId = uuid.v4();
+    final maxOrder = await (selectOnly(steps)..addColumns([steps.stepOrder.max()])..where(steps.noteId.equals(noteId))).getSingle();
+    final nextOrder = (maxOrder.read(steps.stepOrder.max()) ?? 0) + 1;
+    
+    await into(steps).insert(StepsCompanion.insert(
+      id: stepId,
+      noteId: noteId,
+      stepOrder: nextOrder,
+      title: title,
       description: Value(description),
-      imageUrl: Value(imageUrl),
+      imageUrl: Value(imagePath),
       duration: Value(duration),
       notes: Value(notes),
+    ));
+    
+    return stepId;
+  }
+
+  Future<void> updateStep(String stepId, {String? title, String? description, String? imageUrl, String? duration, String? notes}) async {
+    await (update(steps)..where((s) => s.id.equals(stepId))).write(StepsCompanion(
+      title: title != null ? Value(title) : const Value.absent(),
+      description: description != null ? Value(description) : const Value.absent(),
+      imageUrl: imageUrl != null ? Value(imageUrl) : const Value.absent(),
+      duration: duration != null ? Value(duration) : const Value.absent(),
+      notes: notes != null ? Value(notes) : const Value.absent(),
     ));
   }
 

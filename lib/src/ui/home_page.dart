@@ -6,7 +6,7 @@ import 'hierarchical_note_tree.dart';
 import 'note_view_page_refactored.dart';
 
 class HomePage extends StatefulWidget {
-  const HomePage({Key? key}) : super(key: key);
+  const HomePage({super.key});
   @override
   State<HomePage> createState() => _HomePageState();
 }

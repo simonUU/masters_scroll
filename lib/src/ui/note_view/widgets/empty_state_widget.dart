@@ -8,12 +8,12 @@ class EmptyStateWidget extends StatelessWidget {
   final Color? iconColor;
   
   const EmptyStateWidget({
-    Key? key,
+    super.key,
     required this.icon,
     required this.message,
     this.subtitle,
     this.iconColor,
-  }) : super(key: key);
+  });
   
   @override
   Widget build(BuildContext context) {

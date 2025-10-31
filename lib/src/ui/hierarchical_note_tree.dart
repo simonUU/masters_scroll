@@ -6,7 +6,7 @@ import '../db/app_db.dart';
 import 'note_view_page_refactored.dart';
 
 class HierarchicalNoteTree extends StatefulWidget {
-  const HierarchicalNoteTree({Key? key}) : super(key: key);
+  const HierarchicalNoteTree({super.key});
 
   @override
   State<HierarchicalNoteTree> createState() => _HierarchicalNoteTreeState();
@@ -54,9 +54,9 @@ class _HierarchicalNoteTreeState extends State<HierarchicalNoteTree> {
           children: [
             // Add a drop zone for root level
             DragTarget<Note>(
-              onWillAccept: (draggedNote) => draggedNote != null,
-              onAccept: (draggedNote) async {
-                await _showMoveConfirmation(draggedNote, null);
+              onWillAcceptWithDetails: (details) => true,
+              onAcceptWithDetails: (details) async {
+                await _showMoveConfirmation(details.data, null);
               },
               builder: (context, candidateData, rejectedData) {
                 final isReceivingDrag = candidateData.isNotEmpty;
@@ -65,7 +65,7 @@ class _HierarchicalNoteTreeState extends State<HierarchicalNoteTree> {
                   margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                   decoration: isReceivingDrag
                       ? BoxDecoration(
-                          color: Colors.blue.withOpacity(0.1),
+                          color: Colors.blue.withValues(alpha: 0.1),
                           border: Border.all(color: Colors.blue, width: 2),
                           borderRadius: BorderRadius.circular(8),
                         )
@@ -107,18 +107,17 @@ class _HierarchicalNoteTreeState extends State<HierarchicalNoteTree> {
         Container(
           margin: EdgeInsets.only(left: depth * 20.0),
           child: DragTarget<Note>(
-            onWillAccept: (draggedNote) => 
-                draggedNote != null && 
-                draggedNote.id != note.id && 
-                !_isDescendant(note.id, draggedNote.id, allNotes),
-            onAccept: (draggedNote) async {
-              await _showMoveConfirmation(draggedNote, note);
+            onWillAcceptWithDetails: (details) => 
+                details.data.id != note.id && 
+                !_isDescendant(note.id, details.data.id, allNotes),
+            onAcceptWithDetails: (details) async {
+              await _showMoveConfirmation(details.data, note);
             },
             builder: (context, candidateData, rejectedData) {
               final isReceivingDrag = candidateData.isNotEmpty;
               return Card(
                 margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                color: isReceivingDrag ? Colors.blue.withOpacity(0.1) : null,
+                color: isReceivingDrag ? Colors.blue.withValues(alpha: 0.1) : null,
                 elevation: isReceivingDrag ? 4 : 1,
                 child: Draggable<Note>(
                   data: note,
@@ -387,11 +386,13 @@ class _HierarchicalNoteTreeState extends State<HierarchicalNoteTree> {
       });
       await db.toggleNoteExpanded(parentId, true);
       
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => NoteViewPageRefactored(noteId: noteId, startInEditMode: true),
-        ),
-      );
+      if (mounted) {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => NoteViewPageRefactored(noteId: noteId, startInEditMode: true),
+          ),
+        );
+      }
     }
   }
 
@@ -416,7 +417,9 @@ class _HierarchicalNoteTreeState extends State<HierarchicalNoteTree> {
                 leading: const Icon(Icons.home),
                 onTap: () async {
                   await db.moveNote(note.id, null, 0);
-                  Navigator.of(context).pop();
+                  if (mounted) {
+                    Navigator.of(context).pop();
+                  }
                 },
               ),
               const Divider(),
@@ -430,7 +433,9 @@ class _HierarchicalNoteTreeState extends State<HierarchicalNoteTree> {
                       leading: const Icon(Icons.folder),
                       onTap: () async {
                         await db.moveNote(note.id, parent.id, 0);
-                        Navigator.of(context).pop();
+                        if (mounted) {
+                          Navigator.of(context).pop();
+                        }
                       },
                     );
                   },

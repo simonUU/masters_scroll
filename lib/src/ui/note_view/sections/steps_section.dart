@@ -36,13 +36,28 @@ class StepsSection extends StatelessWidget {
               // Add step button when editing - now positioned after the steps
               if (state.isEditing) ...[
                 const SizedBox(height: 16),
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: () => _addNewStep(context, state),
-                    icon: const Icon(Icons.add),
-                    label: const Text('Add Step'),
-                  ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () => _addNewStep(context, state),
+                        icon: const Icon(Icons.add),
+                        label: const Text('Add Step'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () => state.openCameraMode(context),
+                        icon: const Icon(Icons.camera_alt),
+                        label: const Text('Camera Mode'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.blue,
+                          side: const BorderSide(color: Colors.blue),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ],

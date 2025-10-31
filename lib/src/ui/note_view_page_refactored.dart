@@ -13,10 +13,10 @@ class NoteViewPageRefactored extends StatefulWidget {
   final bool startInEditMode;
 
   const NoteViewPageRefactored({
-    Key? key,
+    super.key,
     required this.noteId,
     this.startInEditMode = false,
-  }) : super(key: key);
+  });
 
   @override
   State<NoteViewPageRefactored> createState() => _NoteViewPageRefactoredState();
@@ -86,22 +86,22 @@ class _NoteViewPageRefactoredState extends State<NoteViewPageRefactored> {
               ),
               body: state.isLoading
                   ? const Center(child: CircularProgressIndicator())
-                  : SingleChildScrollView(
+                  : const SingleChildScrollView(
                       child: Column(
                         children: [
                           // Title section with padding
-                          const Padding(
+                          Padding(
                             padding: EdgeInsets.fromLTRB(16, 16, 16, 0),
                             child: TitleSection(),
                           ),
-                          const SizedBox(height: 16),
+                          SizedBox(height: 16),
                           
                           // Media section spans full width (no padding)
-                          const MediaSection(),
-                          const SizedBox(height: 16),
+                          MediaSection(),
+                          SizedBox(height: 16),
                           
                           // Content and other sections with padding
-                          const Padding(
+                          Padding(
                             padding: EdgeInsets.symmetric(horizontal: 16),
                             child: Column(
                               children: [

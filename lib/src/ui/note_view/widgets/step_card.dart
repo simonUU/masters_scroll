@@ -4,6 +4,7 @@ import 'dart:io';
 
 import '../../../db/app_db.dart' as db;
 import '../note_view_state.dart';
+import '../../../constants/spacing.dart';
 
 class StepCard extends StatefulWidget {
   final db.Step step;
@@ -147,120 +148,187 @@ class _StepCardState extends State<StepCard> {
 
   @override
   Widget build(BuildContext context) {
+    final bool isCameraStep = widget.step.imageUrl != null && widget.step.imageUrl!.isNotEmpty;
+    
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
+      margin: AppSpacing.onlyBottomCustom(AppSpacing.md),
+      padding: AppSpacing.cardPadding,
       decoration: BoxDecoration(
         color: Colors.grey.shade50,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: Colors.grey.shade200,
-          width: 1,
+          color: isCameraStep ? Colors.blue.shade200 : Colors.grey.shade200,
+          width: isCameraStep ? 2 : 1,
         ),
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Column(
         children: [
-          // Image section
-          GestureDetector(
-            onTap: _isEditing ? _pickImage : null,
-            child: Container(
-              width: 80,
-              height: 60,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade200,
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: widget.step.imageUrl != null
-                  ? ClipRRect(
-                      borderRadius: BorderRadius.circular(4),
-                      child: Image.file(
-                        File(widget.step.imageUrl!),
-                        width: 80,
-                        height: 60,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Container(
-                            color: Colors.grey.shade300,
-                            child: Icon(
-                              Icons.broken_image,
-                              color: Colors.grey.shade600,
-                              size: 20,
-                            ),
-                          );
-                        },
-                      ),
-                    )
-                  : Icon(
-                      _isEditing ? Icons.add_photo_alternate : Icons.image,
-                      color: Colors.grey.shade600,
-                      size: 24,
-                    ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          
-          // Text content
-          Expanded(
-            child: _isEditing
-                ? Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: _titleController,
-                          focusNode: _titleFocusNode,
-                          style: Theme.of(context).textTheme.bodyMedium,
-                          decoration: const InputDecoration(
-                            hintText: 'Step description...',
-                            border: InputBorder.none,
-                            contentPadding: EdgeInsets.zero,
-                            isDense: true,
-                          ),
-                          maxLines: null,
-                          autofocus: _isEditing,
-                        ),
-                      ),
-                      if (_isLoading)
-                        const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      else ...[
-                        IconButton(
-                          onPressed: _cancelEditing,
-                          icon: const Icon(Icons.close, size: 16),
-                          iconSize: 16,
-                          constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
-                          padding: EdgeInsets.zero,
-                        ),
-                        IconButton(
-                          onPressed: _saveChanges,
-                          icon: const Icon(Icons.check, size: 16),
-                          iconSize: 16,
-                          constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
-                          padding: EdgeInsets.zero,
-                        ),
-                        IconButton(
-                          onPressed: _deleteStep,
-                          icon: const Icon(Icons.delete, size: 16),
-                          iconSize: 16,
-                          constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
-                          padding: EdgeInsets.zero,
-                          color: Colors.red.shade400,
-                        ),
-                      ],
-                    ],
-                  )
-                : GestureDetector(
-                    onTap: _startEditing,
-                    child: Text(
-                      widget.step.title,
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
+          // Camera step indicator
+          if (isCameraStep) ...[
+            Row(
+              children: [
+                Icon(
+                  Icons.camera_alt,
+                  size: 16,
+                  color: Colors.blue.shade600,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  'Camera Step',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.blue.shade600,
+                    fontWeight: FontWeight.w500,
                   ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+          ],
+          
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Image section
+              GestureDetector(
+                onTap: _isEditing ? _pickImage : (widget.step.imageUrl != null ? () => _showFullScreenImage(context) : null),
+                child: Container(
+                  width: 80,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade200,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: widget.step.imageUrl != null
+                      ? ClipRRect(
+                          borderRadius: BorderRadius.circular(4),
+                          child: Image.file(
+                            File(widget.step.imageUrl!),
+                            width: 80,
+                            height: 60,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                color: Colors.grey.shade300,
+                                child: Icon(
+                                  Icons.broken_image,
+                                  color: Colors.grey.shade600,
+                                  size: 20,
+                                ),
+                              );
+                            },
+                          ),
+                        )
+                      : Icon(
+                          _isEditing ? Icons.add_photo_alternate : Icons.image,
+                          color: Colors.grey.shade600,
+                          size: 24,
+                        ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              
+              // Text content
+              Expanded(
+                child: _isEditing
+                    ? Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: _titleController,
+                              focusNode: _titleFocusNode,
+                              style: Theme.of(context).textTheme.bodyMedium,
+                              decoration: const InputDecoration(
+                                hintText: 'Step description...',
+                                border: InputBorder.none,
+                                contentPadding: EdgeInsets.zero,
+                                isDense: true,
+                              ),
+                              maxLines: null,
+                              autofocus: _isEditing,
+                            ),
+                          ),
+                          if (_isLoading)
+                            const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          else ...[
+                            IconButton(
+                              onPressed: _cancelEditing,
+                              icon: const Icon(Icons.close, size: 16),
+                              iconSize: 16,
+                              constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+                              padding: EdgeInsets.zero,
+                            ),
+                            IconButton(
+                              onPressed: _saveChanges,
+                              icon: const Icon(Icons.check, size: 16),
+                              iconSize: 16,
+                              constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+                              padding: EdgeInsets.zero,
+                            ),
+                            IconButton(
+                              onPressed: _deleteStep,
+                              icon: const Icon(Icons.delete, size: 16),
+                              iconSize: 16,
+                              constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+                              padding: EdgeInsets.zero,
+                              color: Colors.red.shade400,
+                            ),
+                          ],
+                        ],
+                      )
+                    : GestureDetector(
+                        onTap: _startEditing,
+                        child: Text(
+                          widget.step.title,
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                      ),
+              ),
+            ],
           ),
         ],
+      ),
+    );
+  }
+
+  void _showFullScreenImage(BuildContext context) {
+    if (widget.step.imageUrl == null) return;
+    
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.black,
+        child: Stack(
+          children: [
+            Center(
+              child: Image.file(
+                File(widget.step.imageUrl!),
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) {
+                  return const Center(
+                    child: Icon(
+                      Icons.broken_image,
+                      color: Colors.white,
+                      size: 50,
+                    ),
+                  );
+                },
+              ),
+            ),
+            Positioned(
+              top: 16,
+              right: 16,
+              child: IconButton(
+                icon: const Icon(Icons.close, color: Colors.white),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

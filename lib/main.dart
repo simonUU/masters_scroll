@@ -4,9 +4,18 @@ import 'package:flutter_quill/flutter_quill.dart';
 import 'package:provider/provider.dart';
 import 'src/db/app_db.dart';
 import 'src/ui/home_page.dart';
+import 'src/services/camera_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize cameras
+  try {
+    await CameraService.initializeCameras();
+  } catch (e) {
+    print('Failed to initialize cameras: $e');
+    // App can still function without camera
+  }
 
   final db = await AppDb.create(); // opens DB
   runApp(MyApp(db: db));
@@ -14,7 +23,7 @@ void main() async {
 
 class MyApp extends StatelessWidget {
   final AppDb db;
-  const MyApp({Key? key, required this.db}) : super(key: key);
+  const MyApp({super.key, required this.db});
 
   @override
   Widget build(BuildContext context) {
