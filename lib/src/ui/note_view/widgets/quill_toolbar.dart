@@ -1,6 +1,7 @@
 // lib/src/ui/note_view/widgets/quill_toolbar.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
+import '../../../constants/design_constants.dart';
 
 class CustomQuillToolbar extends StatelessWidget {
   final QuillController controller;
@@ -15,7 +16,7 @@ class CustomQuillToolbar extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.grey[50],
+        color: AppColors.toolbarBackground,
         borderRadius: BorderRadius.circular(8),
       ),
       child: Wrap(

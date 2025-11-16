@@ -4,7 +4,7 @@ import 'dart:io';
 
 import '../../../db/app_db.dart' as db;
 import '../note_view_state.dart';
-import '../../../constants/spacing.dart';
+import '../../../constants/design_constants.dart';
 
 class StepCard extends StatefulWidget {
   final db.Step step;
@@ -138,7 +138,7 @@ class _StepCardState extends State<StepCard> {
               Navigator.of(context).pop();
               widget.onDelete?.call();
             },
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            style: TextButton.styleFrom(foregroundColor: AppColors.deleteText),
             child: const Text('Delete'),
           ),
         ],
@@ -148,44 +148,19 @@ class _StepCardState extends State<StepCard> {
 
   @override
   Widget build(BuildContext context) {
-    final bool isCameraStep = widget.step.imageUrl != null && widget.step.imageUrl!.isNotEmpty;
-    
     return Container(
-      margin: AppSpacing.onlyBottomCustom(AppSpacing.md),
-      padding: AppSpacing.cardPadding,
+      margin: AppSpacing.stepCardMargin,
+      padding: AppSpacing.stepCardPadding,
       decoration: BoxDecoration(
-        color: Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(8),
+        color: AppColors.stepCardBackground,
+        borderRadius: BorderRadius.circular(AppStyling.stepCardBorderRadius),
         border: Border.all(
-          color: isCameraStep ? Colors.blue.shade200 : Colors.grey.shade200,
-          width: isCameraStep ? 2 : 1,
+          color: AppColors.stepCardBorder,
+          width: AppStyling.defaultBorderWidth,
         ),
       ),
       child: Column(
         children: [
-          // Camera step indicator
-          if (isCameraStep) ...[
-            Row(
-              children: [
-                Icon(
-                  Icons.camera_alt,
-                  size: 16,
-                  color: Colors.blue.shade600,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  'Camera Step',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.blue.shade600,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-          ],
-          
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -193,27 +168,27 @@ class _StepCardState extends State<StepCard> {
               GestureDetector(
                 onTap: _isEditing ? _pickImage : (widget.step.imageUrl != null ? () => _showFullScreenImage(context) : null),
                 child: Container(
-                  width: 80,
-                  height: 60,
+                  width: AppSpacing.stepImageWidth,
+                  height: AppSpacing.stepImageHeight,
                   decoration: BoxDecoration(
-                    color: Colors.grey.shade200,
-                    borderRadius: BorderRadius.circular(4),
+                    color: AppColors.imagePlaceholderBackground,
+                    borderRadius: BorderRadius.circular(AppSpacing.stepImageBorderRadius),
                   ),
                   child: widget.step.imageUrl != null
                       ? ClipRRect(
-                          borderRadius: BorderRadius.circular(4),
+                          borderRadius: BorderRadius.circular(AppSpacing.stepImageBorderRadius),
                           child: Image.file(
                             File(widget.step.imageUrl!),
-                            width: 80,
-                            height: 60,
+                            width: AppSpacing.stepImageWidth,
+                            height: AppSpacing.stepImageHeight,
                             fit: BoxFit.cover,
                             errorBuilder: (context, error, stackTrace) {
                               return Container(
-                                color: Colors.grey.shade300,
+                                color: AppColors.imageErrorBackground,
                                 child: Icon(
                                   Icons.broken_image,
-                                  color: Colors.grey.shade600,
-                                  size: 20,
+                                  color: AppColors.iconColor,
+                                  size: AppStyling.mediumIcon,
                                 ),
                               );
                             },
@@ -221,12 +196,12 @@ class _StepCardState extends State<StepCard> {
                         )
                       : Icon(
                           _isEditing ? Icons.add_photo_alternate : Icons.image,
-                          color: Colors.grey.shade600,
-                          size: 24,
+                          color: AppColors.iconColor,
+                          size: AppStyling.largeIcon,
                         ),
                 ),
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: AppSpacing.stepImageToTextSpacing),
               
               // Text content
               Expanded(
@@ -271,11 +246,11 @@ class _StepCardState extends State<StepCard> {
                             ),
                             IconButton(
                               onPressed: _deleteStep,
-                              icon: const Icon(Icons.delete, size: 16),
-                              iconSize: 16,
-                              constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+                              icon: Icon(Icons.delete, size: AppStyling.smallIcon),
+                              iconSize: AppStyling.smallIcon,
+                              constraints: AppStyling.actionButtonConstraints,
                               padding: EdgeInsets.zero,
-                              color: Colors.red.shade400,
+                              color: AppColors.deleteButton,
                             ),
                           ],
                         ],

@@ -6,6 +6,7 @@ import '../note_view_state.dart';
 import '../widgets/simple_section.dart';
 import '../widgets/empty_state_widget.dart';
 import '../widgets/step_card.dart';
+import '../../../constants/design_constants.dart';
 
 class StepsSection extends StatelessWidget {
   const StepsSection({super.key});
@@ -20,7 +21,7 @@ class StepsSection extends StatelessWidget {
         
         return SimpleSection(
           showBorder: true,
-          backgroundColor: Colors.white,
+          backgroundColor: AppColors.stepsBackground,
           child: Column(
             children: [
               // Steps list or empty state

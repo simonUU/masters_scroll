@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'src/db/app_db.dart';
 import 'src/ui/home_page.dart';
 import 'src/services/camera_service.dart';
+import 'src/constants/design_constants.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -31,7 +32,11 @@ class MyApp extends StatelessWidget {
       value: db,
       child: MaterialApp(
         title: 'Martial Notes',
-        theme: ThemeData(useMaterial3: true, colorSchemeSeed: Colors.indigo),
+        theme: ThemeData(
+          useMaterial3: true, 
+          colorSchemeSeed: Colors.indigo,
+          scaffoldBackgroundColor: AppColors.appBackground,
+        ),
         localizationsDelegates: const [
           GlobalMaterialLocalizations.delegate,
           GlobalWidgetsLocalizations.delegate,

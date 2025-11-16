@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../db/app_db.dart';
 import 'hierarchical_note_tree.dart';
 import 'note_view_page_refactored.dart';
+import '../constants/design_constants.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -17,9 +18,10 @@ class _HomePageState extends State<HomePage> {
     final db = Provider.of<AppDb>(context, listen: false);
 
     return Scaffold(
+      backgroundColor: AppColors.sectionBackground,
       appBar: AppBar(
         title: const Text('Martial Notes'),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        backgroundColor: AppColors.cardBackground,
       ),
       body: StreamBuilder<List<Note>>(
         stream: db.watchHierarchicalNotes(),

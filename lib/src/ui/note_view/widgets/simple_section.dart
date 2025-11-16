@@ -1,6 +1,6 @@
 // lib/src/ui/note_view/widgets/simple_section.dart
 import 'package:flutter/material.dart';
-import '../../../constants/spacing.dart';
+import '../../../constants/design_constants.dart';
 
 class SimpleSection extends StatelessWidget {
   final Widget child;
@@ -24,11 +24,11 @@ class SimpleSection extends StatelessWidget {
       constraints: BoxConstraints(minHeight: minHeight ?? 0),
       padding: padding ?? AppSpacing.sectionPadding,
       decoration: showBorder ? BoxDecoration(
-        border: Border.all(color: Colors.grey[300]!),
-        borderRadius: BorderRadius.circular(12),
-        color: backgroundColor ?? Colors.white,
+        border: Border.all(color: AppColors.stepCardBorder),
+        borderRadius: BorderRadius.circular(AppStyling.stepCardBorderRadius),
+        color: backgroundColor ?? AppColors.cardBackground,
       ) : BoxDecoration(
-        color: backgroundColor,
+        color: backgroundColor ?? AppColors.sectionBackground,
       ),
       child: child,
     );

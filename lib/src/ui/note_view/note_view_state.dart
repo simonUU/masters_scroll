@@ -195,6 +195,30 @@ class NoteViewState extends ChangeNotifier {
     }
   }
   
+  Future<void> deleteMedia(BuildContext context, String mediaId) async {
+    try {
+      final db = Provider.of<AppDb>(context, listen: false);
+      await db.deleteMedia(mediaId);
+      
+      // Reload media list
+      final media = await db.getMediaForNoteOnce(noteId);
+      _media = media;
+      notifyListeners();
+      
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Image deleted successfully')),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error deleting image: $e')),
+        );
+      }
+    }
+  }
+  
   String formatDate(DateTime date) {
     final now = DateTime.now();
     final difference = now.difference(date);

@@ -299,6 +299,10 @@ class AppDb extends _$AppDb {
     await into(mediaItems).insert(MediaItemsCompanion.insert(id: uuid.v4(), noteId: noteId, type: type, path: path, position: Value(position)));
   }
 
+  Future<void> deleteMedia(String mediaId) async {
+    await (delete(mediaItems)..where((m) => m.id.equals(mediaId))).go();
+  }
+
   Future<List<MediaItem>> getMediaForNoteOnce(String noteId) => (select(mediaItems)..where((m) => m.noteId.equals(noteId))..orderBy([(m) => OrderingTerm(expression: m.position)])).get();
 
   // Steps methods

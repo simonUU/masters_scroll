@@ -7,6 +7,7 @@ import 'note_view/sections/media_section.dart';
 import 'note_view/sections/content_section.dart';
 import 'note_view/sections/steps_section.dart';
 import 'note_view/sections/metadata_section.dart';
+import '../constants/design_constants.dart';
 
 class NoteViewPageRefactored extends StatefulWidget {
   final String noteId;
@@ -62,10 +63,11 @@ class _NoteViewPageRefactoredState extends State<NoteViewPageRefactored> {
               }
             },
             child: Scaffold(
+              backgroundColor: AppColors.sectionBackground,
               appBar: AppBar(
                 title: Text(state.currentNote?.title ?? 'Note'),
                 elevation: 0,
-                backgroundColor: Colors.transparent,
+                backgroundColor: AppColors.cardBackground,
                 foregroundColor: Colors.black87,
                 actions: [
                   if (state.isEditing)

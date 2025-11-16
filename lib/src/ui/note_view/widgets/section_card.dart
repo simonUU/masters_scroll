@@ -1,5 +1,6 @@
 // lib/src/ui/note_view/widgets/section_card.dart
 import 'package:flutter/material.dart';
+import '../../../constants/design_constants.dart';
 
 class SectionCard extends StatelessWidget {
   final String title;
@@ -24,9 +25,9 @@ class SectionCard extends StatelessWidget {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey[300]!),
-        borderRadius: BorderRadius.circular(12),
-        color: Colors.white,
+        border: Border.all(color: AppColors.stepCardBorder),
+        borderRadius: BorderRadius.circular(AppStyling.stepCardBorderRadius),
+        color: AppColors.modalBackground,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

@@ -5,7 +5,7 @@ import 'package:provider/provider.dart';
 import '../note_view_state.dart';
 import '../widgets/simple_section.dart';
 import '../widgets/empty_state_widget.dart';
-import '../../../constants/spacing.dart';
+import '../../../constants/design_constants.dart';
 
 class MediaSection extends StatelessWidget {
   const MediaSection({super.key});
@@ -20,7 +20,7 @@ class MediaSection extends StatelessWidget {
         
         return SimpleSection(
           padding: AppSpacing.zero,
-          backgroundColor: state.media.isNotEmpty ? Colors.grey.shade200 : null,
+          backgroundColor: state.media.isNotEmpty ? AppColors.mediaBackground : null,
           child: Column(
             children: [
               // Add photo button when editing
@@ -49,7 +49,7 @@ class MediaSection extends StatelessWidget {
                 )
               else
                 Padding(
-                  padding: AppSpacing.onlyBottom,
+                  padding: AppSpacing.mediaBottomPadding,
                   child: SizedBox(
                     height: MediaSpacing.thumbnailSize,
                     child: ListView.builder(
@@ -60,7 +60,11 @@ class MediaSection extends StatelessWidget {
                         final mediaItem = state.media[index];
                         return _MediaThumbnail(
                           mediaItem: mediaItem,
+                          isEditing: state.isEditing,
                           onTap: () => _showMediaFullScreen(context, mediaItem),
+                          onDelete: state.isEditing 
+                            ? () => _confirmDeleteMedia(context, state, mediaItem)
+                            : null,
                         );
                       },
                     ),
@@ -77,7 +81,7 @@ class MediaSection extends StatelessWidget {
     showDialog(
       context: context,
       builder: (context) => Dialog(
-        backgroundColor: Colors.black,
+        backgroundColor: AppColors.fullScreenOverlay,
         child: Stack(
           children: [
             Center(
@@ -87,10 +91,10 @@ class MediaSection extends StatelessWidget {
               ),
             ),
             Positioned(
-              top: AppSpacing.xl,
-              right: AppSpacing.xl,
+              top: AppSpacing.dialogPositioning,
+              right: AppSpacing.dialogPositioning,
               child: IconButton(
-                icon: const Icon(Icons.close, color: Colors.white),
+                icon: Icon(Icons.close, color: AppColors.fullScreenContent),
                 onPressed: () => Navigator.of(context).pop(),
               ),
             ),
@@ -99,37 +103,97 @@ class MediaSection extends StatelessWidget {
       ),
     );
   }
+
+  void _confirmDeleteMedia(BuildContext context, NoteViewState state, dynamic mediaItem) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Image'),
+        content: const Text('Are you sure you want to delete this image?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              state.deleteMedia(context, mediaItem.id);
+            },
+            style: TextButton.styleFrom(foregroundColor: AppColors.deleteText),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _MediaThumbnail extends StatelessWidget {
   final dynamic mediaItem;
+  final bool isEditing;
   final VoidCallback onTap;
+  final VoidCallback? onDelete;
 
   const _MediaThumbnail({
     required this.mediaItem,
+    required this.isEditing,
     required this.onTap,
+    this.onDelete,
   });
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: SizedBox(
-        width: MediaSpacing.thumbnailSize,
-        height: MediaSpacing.thumbnailSize,
-        child: Image.file(
-          File(mediaItem.path),
-          fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) {
-            return Container(
-              color: Colors.grey[200],
-              child: const Icon(
-                Icons.broken_image,
-                color: Colors.grey,
+      child: Stack(
+        children: [
+          SizedBox(
+            width: MediaSpacing.thumbnailSize,
+            height: MediaSpacing.thumbnailSize,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(AppStyling.imageBorderRadius),
+              child: Image.file(
+                File(mediaItem.path),
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    color: AppColors.imageErrorBackground,
+                    child: Icon(
+                      Icons.broken_image,
+                      color: AppColors.iconColor,
+                    ),
+                  );
+                },
               ),
-            );
-          },
-        ),
+            ),
+          ),
+          // Delete button when editing
+          if (isEditing && onDelete != null)
+            Positioned(
+              top: AppSpacing.small,
+              right: AppSpacing.small,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: AppColors.deleteButton,
+                  shape: BoxShape.circle,
+                ),
+                child: IconButton(
+                  icon: Icon(
+                    Icons.close,
+                    color: AppColors.fullScreenContent,
+                    size: AppStyling.smallIcon,
+                  ),
+                  padding: EdgeInsets.all(AppSpacing.small / 2),
+                  constraints: const BoxConstraints(
+                    minWidth: 28,
+                    minHeight: 28,
+                  ),
+                  onPressed: onDelete,
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
